@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PianoMan.Core", "src\PianoMan.Core\PianoMan.Core.csproj", "{4E17D70B-0E9E-46B1-AED5-B5F37C83EC0E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PianoMan.Cli", "src\PianoMan.Cli\PianoMan.Cli.csproj", "{B68C23C3-0AD9-4E41-98C0-C14C54635696}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PianoMan.Tests", "tests\PianoMan.Tests\PianoMan.Tests.csproj", "{7CCF4E51-47B6-436E-9B45-8DCBFFCD23F0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4E17D70B-0E9E-46B1-AED5-B5F37C83EC0E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E17D70B-0E9E-46B1-AED5-B5F37C83EC0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E17D70B-0E9E-46B1-AED5-B5F37C83EC0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E17D70B-0E9E-46B1-AED5-B5F37C83EC0E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B68C23C3-0AD9-4E41-98C0-C14C54635696}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B68C23C3-0AD9-4E41-98C0-C14C54635696}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B68C23C3-0AD9-4E41-98C0-C14C54635696}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B68C23C3-0AD9-4E41-98C0-C14C54635696}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7CCF4E51-47B6-436E-9B45-8DCBFFCD23F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7CCF4E51-47B6-436E-9B45-8DCBFFCD23F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7CCF4E51-47B6-436E-9B45-8DCBFFCD23F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7CCF4E51-47B6-436E-9B45-8DCBFFCD23F0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

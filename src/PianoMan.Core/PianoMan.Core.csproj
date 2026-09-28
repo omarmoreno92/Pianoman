@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>PianoMan.Core</RootNamespace>
+    <AssemblyName>PianoMan.Core</AssemblyName>
+  </PropertyGroup>
+</Project>
