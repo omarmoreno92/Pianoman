@@ -1,52 +1,19 @@
 # Roadmap
 
-## 0.1 — Audible position model
+## 0.2 — Theory Book Player
 
-- [x] FEN, legal move, SAN, and main-line PGN support.
-- [x] Explainable harmony vector and independent tension score.
-- [x] Deterministic chord and MIDI-note output.
-- [x] CLI, JSON export, automated tests, and Native AOT build.
+- Pinned CC0 theory corpus and offline compiler.
+- Deterministic one-ply fallback outside theory.
+- PGN web player with board, timeline, candidate comparison and Web Audio.
+- Listen-first dissonance observations exported for later engine comparison.
 
-Acceptance: a checked-in master game replays from start to finish and produces the
-same timeline on every supported machine.
+## Next research
 
-## 0.2 — Correctness corpus
+- “Afinar” only when there is a measurable harmonic clash instead of on every out-of-book move.
+- Explore multiply candidate phrases/“sonatas” after the deterministic single-ply baseline is validated.
+- Generate complete musical compositions from full games.
+- Study whether opening families develop repeatable tonal identities.
+- Investigate the inverse problem: song → legal chess game, without assuming every musical sequence has a useful chess inverse.
+- Benchmark accuracy, latency and memory against reference engines at 1-, 3- and 5-minute controls before making strength claims.
 
-- [ ] Add perft positions for legal-move validation.
-- [ ] Support multiple games per PGN file.
-- [ ] Add repetition, fifty-move, and insufficient-material state.
-- [ ] Build a curated corpus of roughly 100 annotated master games.
-- [ ] Version every change to weights and thresholds.
-
-Acceptance: move-generation matches published perft counts and every corpus game
-replays without manual exceptions.
-
-## 0.3 — Sonification
-
-- [ ] Emit Standard MIDI Files.
-- [ ] Map the eight dimensions to voicing, register, velocity, and tempo.
-- [ ] Render an interactive harmony/tension timeline.
-- [ ] Compare player-level harmonic signatures.
-
-Acceptance: listeners can replay a game and every audible event links back to a
-documented chess signal.
-
-## 0.4 — Measurement
-
-- [ ] Freeze a position benchmark before tuning.
-- [ ] Rank legal moves using one-ply harmony deltas.
-- [ ] Measure top-1, top-3, and top-5 agreement with a fixed reference engine.
-- [ ] Measure positions resolved per node and per millisecond.
-
-Acceptance: benchmark scripts publish inputs, settings, raw results, and hardware.
-
-## 0.5 — Piano Man engine
-
-- [ ] Add harmonic-shock detection.
-- [ ] Search forcing and tension-resolving moves until stability returns.
-- [ ] Add a compact weighted opening repertoire keyed by Zobrist hash.
-- [ ] Expose the engine through UCI.
-- [ ] Add time management and transposition storage.
-
-Acceptance: the UCI engine completes games legally and reports both calculation
-nodes and harmonic-resolution events.
+Stockfish integration is deliberately deferred. It belongs in validation/benchmark tooling first, not in the 0.2 runtime decision path.

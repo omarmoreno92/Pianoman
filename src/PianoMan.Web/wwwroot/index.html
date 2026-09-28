@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Piano Man 0.2</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+<header><div><h1>Piano Man <span>0.2</span></h1><p>Ajedrez como estructura armónica · análisis determinista</p></div><div id="engineState" class="status">Listo</div></header>
+<main>
+<section class="loader card">
+  <div id="dropZone"><strong>Suelta un PGN aquí</strong><small>o selecciona un archivo · máximo 2 MB</small><input id="fileInput" type="file" accept=".pgn,text/plain,application/x-chess-pgn"><button id="pickFile">Seleccionar PGN</button></div>
+  <label for="pgnText">También puedes pegar PGN</label><textarea id="pgnText" rows="7" spellcheck="false"></textarea>
+  <div class="row"><button id="analyzeBtn" class="primary">Analizar</button><button id="demoBtn">Cargar demo</button><select id="gameSelect" hidden></select></div>
+  <p id="error" class="error" role="alert"></p>
+</section>
+<section id="workspace" hidden>
+  <div class="layout">
+    <section class="card boardCard"><div id="board" class="board" aria-label="Tablero"></div><div class="nav"><button data-nav="start">⏮</button><button data-nav="prev">◀</button><span id="plyLabel">Inicio</span><button data-nav="next">▶</button><button data-nav="end">⏭</button></div><div id="timeline" class="timeline"></div></section>
+    <section class="card details">
+      <div class="headline"><div><span id="modeBadge" class="badge">—</span><h2 id="moveTitle">Posición inicial</h2><p id="opening">Fuera de clasificación ECO</p></div><button id="copyFen">Copiar FEN</button></div>
+      <code id="fen"></code>
+      <div class="metrics"><div><small>Acorde</small><strong id="chord">—</strong></div><div><small>Notas MIDI</small><strong id="midi">—</strong></div><div><small>Tensión</small><strong id="tension">—</strong></div><div><small>Balance</small><strong id="balance">—</strong></div></div>
+      <div id="components" class="components"></div>
+      <div class="audioControls"><button id="playPosition">▶ Escuchar posición</button><label>Modo <select id="playMode"><option value="chord">Acorde</option><option value="arp">Arpegio</option></select></label><label>Tempo <input id="tempo" type="range" min="50" max="180" value="96"><span id="tempoValue">96</span></label><label><input id="autoPlay" type="checkbox"> Sonar al avanzar</label></div>
+      <div class="decision"><div class="row"><h3>Decisión</h3><button id="markDissonance">Marcar disonancia</button><button id="exportMarks">Exportar JSON</button></div><p id="decisionText">Selecciona una jugada.</p><p class="notice">Las etiquetas de calidad son clasificaciones provisionales de Piano Man, no de Stockfish.</p></div>
+    </section>
+  </div>
+  <section class="card candidates"><div class="row"><h3>Candidatos</h3><button id="compareBtn">Comparar seleccionados</button></div><div id="candidateList"></div></section>
+</section>
+</main>
+<footer>Corpus teórico CC0 reproducible y versionado. “Afinando…” es el término oficial fuera de teoría.</footer>
+<script src="app.js"></script>
+</body></html>

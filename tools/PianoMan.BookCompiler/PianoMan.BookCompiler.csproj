@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><AssemblyName>PianoMan.BookCompiler</AssemblyName></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../../src/PianoMan.Core/PianoMan.Core.csproj" /></ItemGroup>
+</Project>

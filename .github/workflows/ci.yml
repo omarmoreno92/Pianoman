@@ -1,53 +1,40 @@
 name: ci
-
 on:
   push:
-    branches: [main]
+    branches: [main, feature/theory-book-player]
   pull_request:
     branches: [main]
-
 permissions:
   contents: read
-
 jobs:
   build-test-publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-
+    timeout-minutes: 20
     steps:
-      - name: Check out source
-        uses: actions/checkout@v4
-
-      - name: Install .NET 10
-        uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
-
       - name: Restore
         run: dotnet restore PianoMan.sln
-
       - name: Build
         run: dotnet build PianoMan.sln --configuration Release --no-restore
-
       - name: Test
         run: dotnet test PianoMan.sln --configuration Release --no-build --verbosity normal
-
-      - name: Smoke test CLI
-        run: dotnet run --project src/PianoMan.Cli --configuration Release --no-build -- analyze
-
-      - name: Publish Native AOT
-        run: >-
-          dotnet publish src/PianoMan.Cli/PianoMan.Cli.csproj
-          --configuration Release
-          --runtime linux-x64
-          --output artifacts/linux-x64
-
-      - name: Smoke test native executable
-        run: ./artifacts/linux-x64/pianoman demo
-
-      - name: Upload native executable
-        uses: actions/upload-artifact@v4
-        with:
-          name: pianoman-linux-x64
-          path: artifacts/linux-x64/pianoman
-          if-no-files-found: error
+      - name: Smoke CLI
+        run: dotnet run --project src/PianoMan.Cli --configuration Release --no-build -- demo > artifacts-cli.json
+      - name: JavaScript syntax
+        run: node --check src/PianoMan.Web/wwwroot/app.js
+      - name: Smoke web
+        shell: bash
+        run: |
+          dotnet run --project src/PianoMan.Web --configuration Release --no-build -- --urls http://127.0.0.1:5080 > /tmp/pianoman-web.log 2>&1 &
+          pid=$!
+          trap 'kill $pid || true' EXIT
+          for i in {1..30}; do curl -fsS http://127.0.0.1:5080/api/health && break || sleep 1; done
+          curl -fsS http://127.0.0.1:5080/api/demo | grep -q '1. e4 e5 2. Nf3 Nc6'
+          curl -fsS -H 'content-type: application/json' -d '{"pgn":"1. e4 e5 2. Nf3 Nc6 *"}' http://127.0.0.1:5080/api/analyze | grep -q 'timeline'
+      - name: Publish Native AOT CLI
+        run: dotnet publish src/PianoMan.Cli/PianoMan.Cli.csproj --configuration Release --runtime linux-x64 --output artifacts/linux-x64
+      - name: Smoke native CLI
+        run: ./artifacts/linux-x64/pianoman demo > /dev/null

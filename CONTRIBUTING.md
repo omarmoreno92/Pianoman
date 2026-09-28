@@ -1,24 +1,14 @@
 # Contributing
 
-Piano Man is an experiment, so changes to the model need evidence that can be
-reproduced.
+Piano Man is a reproducible experiment. Keep chess evaluation independent from `ChordMapper`, document changes to the harmonic model, and include focused tests for chess-rule or PGN changes.
 
-## Local workflow
+Local gate:
 
 ```bash
-dotnet restore
-dotnet build --configuration Release --no-restore
-dotnet test --configuration Release --no-build
-dotnet run --project src/PianoMan.Cli -- demo
+dotnet restore PianoMan.sln
+dotnet build PianoMan.sln -c Release
+dotnet test PianoMan.sln -c Release --no-build
+node --check src/PianoMan.Web/wwwroot/app.js
 ```
 
-## Pull requests
-
-- Keep the chess evaluation independent from the chord mapper.
-- Explain a new feature or weight in `docs/harmonic-model.md`.
-- Add a focused test for move-generation and PGN correctness changes.
-- Include the PGN or FEN for any chess-specific bug.
-- Include before/after benchmark data for performance claims.
-
-Avoid tuning weights against a single famous game. Put candidate changes through a
-fixed corpus so that improvements remain measurable.
+Theory-book changes must use pinned inputs, verify source SHA-256 values, reject illegal moves instead of skipping them, and document a new resource version/hash if output changes. Do not add runtime network calls, Stockfish, or unnecessary production NuGet packages.

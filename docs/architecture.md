@@ -1,62 +1,17 @@
 # Architecture
 
-## Boundaries
+Piano Man is split into deterministic chess, harmonic mapping, theory data, analysis orchestration, and presentation.
 
-### `PianoMan.Core.Chess`
+- `PianoMan.Core/Chess`: FEN, legal moves, SAN formatting/parsing, multi-game PGN parsing.
+- `PianoMan.Core/Harmony`: `HarmonyAnalyzer` computes the eight-dimensional chess vector; `ChordMapper` independently maps the resulting snapshot to music. Their independence is intentional and preserved.
+- `PianoMan.Core/Theory`: deterministic Zobrist hash, packed moves, hash-sorted theory lookup, weighted selection, embedded Brotli loader.
+- `PianoMan.Core/Analysis`: chooses between `Theory` and deterministic one-ply `Tuning` (`Afinando…`) modes and builds candidate/timeline DTOs.
+- `PianoMan.Cli`: deterministic text/JSON interface and Native AOT target.
+- `PianoMan.Web`: ASP.NET Core API + static HTML/CSS/JS. No npm or client framework.
+- `PianoMan.BookCompiler`: offline compiler for pinned opening sources.
 
-Owns the board state, FEN, legal moves, SAN, and PGN. It has no knowledge of music
-or evaluation weights.
+## Analysis flow
 
-### `PianoMan.Core.Harmony`
+Before every played move, the theory hash is queried. If the exact move is a continuation, its decision is theory-only and harmonic loss is omitted. Otherwise all legal child positions are statically evaluated from the side-to-move perspective, sorted deterministically, and classified by loss from the best candidate.
 
-Turns a position into a `HarmonySnapshot`. `ChordMapper` is a separate final step,
-so changing musical vocabulary cannot silently change chess decisions.
-
-### `PianoMan.Core.Analysis`
-
-Coordinates PGN replay and emits a timeline with the source move, resulting FEN,
-harmony vector, chord symbol, and MIDI notes.
-
-### `PianoMan.Cli`
-
-Provides a small Native AOT entry point. It formats console output and JSON but
-contains no chess rules.
-
-## Data flow
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant PGN as PGN reader
-    participant Board as Chess position
-    participant Model as Harmony analyzer
-    participant Music as Chord mapper
-
-    User->>PGN: Load game
-    loop Every main-line ply
-        PGN->>Board: Parse SAN and apply legal move
-        Board->>Model: Evaluate position
-        Model->>Music: Score plus tension
-        Music-->>User: Chord and MIDI notes
-    end
-```
-
-## Performance path
-
-The array board and full recomputation in v0.1 favor auditability. The intended
-engine path is:
-
-1. Establish correctness with perft tests.
-2. Introduce twelve piece bitboards and occupancy masks.
-3. Cache attack maps and piece relationships.
-4. Update the harmony vector from the move delta.
-5. Store positions by Zobrist hash.
-6. Add a narrow resolution search triggered by harmonic shock.
-
-Public types describe concepts rather than storage, so the board representation can
-change without altering the analysis format.
-
-## Dependency policy
-
-Production projects use only the .NET base class library. This keeps publishing,
-profiling, and Native AOT behavior predictable. Test frameworks remain test-only.
+No engine search is multithreaded in 0.2. Web Audio “voices” are independent audio graphs only.
