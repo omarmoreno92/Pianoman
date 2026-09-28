@@ -22,11 +22,11 @@ The compiler in `tools/PianoMan.BookCompiler` verifies source hashes and aborts 
 
 ## Binary layout
 
-The resource starts with a versioned header, followed by a hash-sorted position table, packed continuations, and ECO/name strings. Position lookup is binary search. Moves are packed into `ushort`; continuation weights are `uint`. Theory selection uses weights only and never evaluates child positions.
+The resource starts with a versioned header, followed by a hash-sorted position table, packed continuations, and ECO/name strings. Position lookup is binary search. Moves are packed into `ushort`; continuation weights are `uint`. The book itself contains no engine evaluation.
 
 ## Selection versus sonification
 
-If a played move is in the current book position, analysis mode is `Theory` and the UI shows `TEORÍA · SIN BÚSQUEDA`. Candidate ordering is purely corpus-weight ordering. Piano Man may still calculate the current/resulting chord so the line can be heard, but that sound does not influence theory selection. A theoretical move may sound dissonant; the chord is the current mathematical representation, not an independent correctness oracle.
+If a played move is in the current book position, analysis mode is `Theory` and the UI shows `TEORÍA · SIN BÚSQUEDA`. Book membership restricts the candidates to known theoretical continuations. Piano Man then projects only those continuations through its one-ply harmonic model and recommends the most harmonious continuation; corpus weight breaks deterministic ties. This is deliberately different from searching every legal move. A theoretical move may still sound dissonant: the chord is a mathematical representation, not an independent correctness oracle.
 
 ## Reproduction
 

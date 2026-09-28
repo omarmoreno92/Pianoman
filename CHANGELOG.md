@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Added Global/White/Black auditory perception and per-move perception deltas.
+- Theory recommendations now choose the most harmonious known continuation with corpus weight as deterministic tie-breaker.
+- Added guarded Piano Man/Radio Killer decision policies outside theory.
+- Added research and educational documentation for the “How Chess Sounds” hypothesis.
+
 ## 0.2.0 - 2026-09-28
 
 - Added versioned theory-book format, deterministic Zobrist hashing, packed moves and offline compiler contract.

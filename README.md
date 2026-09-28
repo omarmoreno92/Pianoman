@@ -1,6 +1,8 @@
 # Piano Man 0.2
 
-**What if a chess position could be heard?**
+**How chess sounds.**
+
+Piano Man asks whether chess structure can be represented musically well enough that a human can *hear* development, balance, pressure, mistakes and recovery instead of learning those ideas only as notation or engine numbers.
 
 Piano Man is a .NET 10 research project that represents chess positions as harmonic structures and lets a user hear a game while inspecting deterministic chess signals. Version 0.2 adds a versioned opening-book path, a deterministic one-ply fallback outside theory, and a web PGN player with Web Audio.
 
@@ -15,7 +17,9 @@ Before each played move:
 
 The provisional Piano Man loss bands are: `0 Best`, `1–15 Excellent`, `16–40 Good`, `41–80 Inaccuracy`, `81–160 Mistake`, and `>160 Blunder`. The web UI translates them to Spanish and keeps the model attribution visible.
 
-Theory sound is not a correctness test. A theoretical move may sound dissonant: the chord is simply the current mathematical representation.
+Theory membership defines the admissible opening continuations. Piano Man then chooses among those theoretical continuations by its harmonic score; corpus weight is a deterministic tie-breaker. This is not a tree search and a theoretical move can still sound tense.
+
+Every position now exposes three simultaneous listening perspectives: **Global**, **White**, and **Black**. The same board can therefore remain globally coherent while becoming increasingly uncomfortable for one side.
 
 ## Web player
 
@@ -44,6 +48,8 @@ API endpoints:
 - `GET /api/health`
 
 No runtime network access, AI model or Stockfish process is required for analysis.
+
+Outside theory, normal **Piano Man** mode preserves chess quality first and prefers the most harmonious continuation inside a narrow correctness window. A **Radio Killer** opportunity is triggered after a Piano Man loss of at least 81: while the advantage persists, the selector still stays inside the `Excellent` (`≤15`) window and only then prefers continuations that maximize the opponent's perceived tension. Dissonance is therefore a consequence of exploiting a mistake, never permission to play a bad move.
 
 ## CLI
 
