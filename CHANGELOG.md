@@ -1,12 +1,14 @@
 # Changelog
 
-All notable changes will be documented in this file.
+## 0.2.0 - 2026-09-28
+
+- Added versioned theory-book format, deterministic Zobrist hashing, packed moves and offline compiler contract.
+- Added deterministic one-ply candidate analysis with Piano Man loss classifications outside theory.
+- Added multi-game PGN reading and SAN formatting.
+- Added ASP.NET Core web player with drag/drop PGN, board/timeline navigation, Web Audio audition and candidate comparison.
+- Added listen-first dissonance marking/export for later Stockfish comparison.
+- Added theory provenance, validation documentation and CI web smoke tests.
 
 ## 0.1.0 - 2026-09-27
 
-- Added the .NET 10 solution and Native AOT CLI.
-- Added FEN, legal move, SAN, and main-line PGN support.
-- Added the first explainable harmony and tension model.
-- Added deterministic chord and MIDI-note mapping.
-- Added PGN timeline and JSON analysis.
-- Added automated tests and GitHub Actions validation.
+- Initial .NET 10 chess/harmony analyzer, CLI, tests and CI.

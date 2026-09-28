@@ -8,3 +8,4 @@ TestResults/
 artifacts/
 publish/
 *.DotSettings.user
+tools/PianoMan.BookCompiler/input/

@@ -1,21 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <RootNamespace>PianoMan.Cli</RootNamespace>
     <AssemblyName>pianoman</AssemblyName>
     <PublishAot>true</PublishAot>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
-    <StripSymbols>true</StripSymbols>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="../PianoMan.Core/PianoMan.Core.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="../../samples/immortal-game.pgn"
-          Link="samples/immortal-game.pgn"
-          CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
+  <ItemGroup><ProjectReference Include="../PianoMan.Core/PianoMan.Core.csproj" /></ItemGroup>
 </Project>

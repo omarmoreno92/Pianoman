@@ -6,7 +6,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PianoMan.Core", "src\PianoM
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PianoMan.Cli", "src\PianoMan.Cli\PianoMan.Cli.csproj", "{B68C23C3-0AD9-4E41-98C0-C14C54635696}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PianoMan.Web", "src\PianoMan.Web\PianoMan.Web.csproj", "{10C85697-A785-42A4-9EE7-E6E92F68590B}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PianoMan.Tests", "tests\PianoMan.Tests\PianoMan.Tests.csproj", "{7CCF4E51-47B6-436E-9B45-8DCBFFCD23F0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PianoMan.BookCompiler", "tools\PianoMan.BookCompiler\PianoMan.BookCompiler.csproj", "{D1C06187-F8C5-4A0F-A931-EAB39E7FC50B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -22,9 +26,17 @@ Global
 		{B68C23C3-0AD9-4E41-98C0-C14C54635696}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B68C23C3-0AD9-4E41-98C0-C14C54635696}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B68C23C3-0AD9-4E41-98C0-C14C54635696}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10C85697-A785-42A4-9EE7-E6E92F68590B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10C85697-A785-42A4-9EE7-E6E92F68590B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10C85697-A785-42A4-9EE7-E6E92F68590B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10C85697-A785-42A4-9EE7-E6E92F68590B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7CCF4E51-47B6-436E-9B45-8DCBFFCD23F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7CCF4E51-47B6-436E-9B45-8DCBFFCD23F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7CCF4E51-47B6-436E-9B45-8DCBFFCD23F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7CCF4E51-47B6-436E-9B45-8DCBFFCD23F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D1C06187-F8C5-4A0F-A931-EAB39E7FC50B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1C06187-F8C5-4A0F-A931-EAB39E7FC50B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1C06187-F8C5-4A0F-A931-EAB39E7FC50B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1C06187-F8C5-4A0F-A931-EAB39E7FC50B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
