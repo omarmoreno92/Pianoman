@@ -87,11 +87,11 @@ public static class GameAnalyzer
                 .ToArray();
 
             var recommended=ordered[0].Move.ToUci();
-            var candidates=new List<CandidateAnalysis>(ordered.Length);
+            var theoryCandidates=new List<CandidateAnalysis>(ordered.Length);
             for(var i=0;i<ordered.Length;i++)
             {
                 var item=ordered[i];
-                candidates.Add(new CandidateAnalysis(
+                theoryCandidates.Add(new CandidateAnalysis(
                     i+1,
                     SanFormatter.Format(position,item.Move),
                     item.Move.ToUci(),
@@ -119,7 +119,7 @@ public static class GameAnalyzer
                 recommended,
                 lookup.Eco,
                 lookup.Name,
-                candidates);
+                theoryCandidates);
         }
 
         var persona=ResolvePersona(position,requestedPersona);
@@ -159,11 +159,11 @@ public static class GameAnalyzer
         var selected=sorted.Take(10).ToList();
         if(playedIndex>=10)selected.Add(sorted[playedIndex]);
 
-        var candidates=new List<CandidateAnalysis>(selected.Count);
+        var tuningCandidates=new List<CandidateAnalysis>(selected.Count);
         foreach(var item in selected)
         {
             var originalRank=Array.FindIndex(sorted,x=>x.Move==item.Move)+1;
-            candidates.Add(new CandidateAnalysis(
+            tuningCandidates.Add(new CandidateAnalysis(
                 originalRank,
                 SanFormatter.Format(position,item.Move),
                 item.Move.ToUci(),
@@ -190,7 +190,7 @@ public static class GameAnalyzer
             recommendedUci,
             lookup?.Eco,
             lookup?.Name,
-            candidates);
+            tuningCandidates);
     }
 
     public static PianoMoveClass Classify(int loss)=>loss switch
