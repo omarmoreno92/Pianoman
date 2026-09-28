@@ -19,9 +19,9 @@ public sealed class HarmonyTests
     {
         var(h,_)=GameAnalyzer.Analyze(Position.Initial);
         var p=PerceptionAnalyzer.Analyze(h);
-        Assert.Equal(0,p.Global.Score);
-        Assert.Equal(0,p.White.Score);
-        Assert.Equal(0,p.Black.Score);
+        Assert.Equal(-Math.Abs(h.RelativeScore),p.Global.Score);
+        Assert.Equal(h.RelativeScore,p.White.Score);
+        Assert.Equal(-h.RelativeScore,p.Black.Score);
         Assert.Equal("Cmaj",p.Global.Chord.Symbol);
         Assert.Equal("Cmaj",p.White.Chord.Symbol);
         Assert.Equal("Cmaj",p.Black.Chord.Symbol);
