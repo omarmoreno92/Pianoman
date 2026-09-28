@@ -30,7 +30,7 @@ If a played move is in the current book position, analysis mode is `Theory` and 
 
 ## Reproduction
 
-Place the pinned Stockfish ZIP and the five pinned Lichess TSV files locally, then run:
+The compiler itself performs no network access. To reproduce the release resource from already-downloaded inputs, run:
 
 ```bash
 dotnet run --project tools/PianoMan.BookCompiler -- \
@@ -39,6 +39,10 @@ dotnet run --project tools/PianoMan.BookCompiler -- \
   --output src/PianoMan.Core/Resources
 ```
 
-The compiler performs no network access.
+On PowerShell, the development helper downloads the exact pinned inputs, verifies the Stockfish ZIP hash, invokes the offline compiler, and verifies the final resource hash:
+
+```powershell
+./tools/PianoMan.BookCompiler/build-release-book.ps1
+```
 
 > Development note: a tiny bootstrap resource can be used while working on the loader/UI, but it is not the release v1 corpus and must never be reported with the pinned v1 hash/counts.
