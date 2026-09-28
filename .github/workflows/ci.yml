@@ -1,0 +1,53 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore PianoMan.sln
+
+      - name: Build
+        run: dotnet build PianoMan.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test PianoMan.sln --configuration Release --no-build --verbosity normal
+
+      - name: Smoke test CLI
+        run: dotnet run --project src/PianoMan.Cli --configuration Release --no-build -- analyze
+
+      - name: Publish Native AOT
+        run: >-
+          dotnet publish src/PianoMan.Cli/PianoMan.Cli.csproj
+          --configuration Release
+          --runtime linux-x64
+          --output artifacts/linux-x64
+
+      - name: Smoke test native executable
+        run: ./artifacts/linux-x64/pianoman demo
+
+      - name: Upload native executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: pianoman-linux-x64
+          path: artifacts/linux-x64/pianoman
+          if-no-files-found: error
