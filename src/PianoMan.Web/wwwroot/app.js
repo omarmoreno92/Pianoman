@@ -6,7 +6,8 @@ const pieces = {K:'♔',Q:'♕',R:'♖',B:'♗',N:'♘',P:'♙',k:'♚',q:'♛',
 const classEs = {best:'Mejor',excellent:'Excelente',good:'Buena',inaccuracy:'Imprecisión',mistake:'Error',blunder:'Error grave'};
 const labels = {material:'Material',activity:'Actividad',coordination:'Coordinación',kingSafety:'Seguridad del rey',space:'Espacio',structure:'Estructura',pressure:'Presión',initiative:'Iniciativa'};
 let payload = null, game = null, ply = 0, marks = [];
-let audio = null;
+let audio = null, audioMaster = null;
+const noteNames = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
 
 const drop = $('dropZone');
 $('pickFile').onclick = () => $('fileInput').click();
@@ -47,8 +48,8 @@ function render(){
   if(!game)return;const e=game.timeline[ply];renderBoard(e);$('plyLabel').textContent=ply===0?'Inicio':`Ply ${ply}/${game.timeline.length-1}`;$('moveTitle').textContent=ply===0?'Posición inicial':`${e.moveNumber}. ${e.san} · ${e.uci}`;
   const decision=e.decision; $('modeBadge').textContent=decision?.mode==='theory'?'TEORÍA · SIN BÚSQUEDA':decision?'Afinando…':(e.inTheory?'EN LIBRO':'POSICIÓN');
   $('opening').textContent=e.eco&&e.opening?`${e.eco} · ${e.opening}`:(decision?.eco&&decision?.opening?`${decision.eco} · ${decision.opening}`:'Sin identidad ECO/nombre para esta posición');
-  const heard=entryPerception(e),heardChord=entryChord(e);$('fen').textContent=e.fen;$('chord').textContent=heardChord.symbol;$('midi').textContent=heardChord.midiNotes.join(', ');$('tension').textContent=heard?.tension??e.harmony.tension;$('balance').textContent=heard?.score??e.harmony.relativeScore;
-  renderComponents(e.harmony,perspectiveKey());renderDecision(e);renderTimeline();if($('autoPlay').checked)playChord(heardChord.midiNotes,0,0);
+  const heard=entryPerception(e),heardChord=entryChord(e);$('fen').textContent=e.fen;$('chord').textContent=heardChord.symbol;$('midi').textContent=heardChord.midiNotes.map(n=>midiName(n)+' ('+n+')').join(' · ');$('tension').textContent=heard?.tension??e.harmony.tension;$('balance').textContent=heard?.score??e.harmony.relativeScore;
+  renderComponents(e.harmony,perspectiveKey());renderDecision(e);renderTimeline();renderAudioGuide(heardChord);if($('autoPlay').checked)playChord(heardChord.midiNotes,0,0);
 }
 function renderComponents(h,perspective){
   const host=$('components');host.innerHTML='';for(const [key,label] of Object.entries(labels)){const d=document.createElement('div');d.className='component';const value=perspective==='white'?h.white[key]:perspective==='black'?h.black[key]:`${h.white[key]} / ${h.black[key]}`;d.innerHTML=`<small>${label}</small><strong>${value}</strong>`;host.appendChild(d);}
@@ -65,13 +66,70 @@ function renderDecision(entry){
 }
 function renderTimeline(){const t=$('timeline');t.innerHTML='';game.timeline.forEach((e,i)=>{const b=document.createElement('button');b.textContent=i===0?'•':e.san;b.title=e.fen;if(i===ply)b.classList.add('active');b.onclick=()=>{ply=i;render();};t.appendChild(b);});t.children[ply]?.scrollIntoView({block:'nearest',inline:'nearest'});}
 
-function ensureAudio(){audio ??= new (window.AudioContext||window.webkitAudioContext)();return audio;}
 function midiHz(n){return 440*Math.pow(2,(n-69)/12);}
-function playNotes(notes,start,duration,pan=0,gain=.055,arp=false){const ctx=ensureAudio();const now=ctx.currentTime+start;notes.forEach((m,i)=>{const osc=ctx.createOscillator(),g=ctx.createGain(),p=ctx.createStereoPanner();osc.type='sine';osc.frequency.value=midiHz(m);p.pan.value=pan;g.gain.setValueAtTime(0,now+(arp?i*.08:0));g.gain.linearRampToValueAtTime(gain,now+.02+(arp?i*.08:0));g.gain.exponentialRampToValueAtTime(.0001,now+duration+(arp?i*.08:0));osc.connect(g).connect(p).connect(ctx.destination);osc.start(now+(arp?i*.08:0));osc.stop(now+duration+.2+(arp?i*.08:0));});}
-function playChord(notes,pan=0,delay=0){const beat=60/Number($('tempo').value);playNotes(notes,delay,beat*.85,pan,.055,$('playMode').value==='arp');}
-function playCandidate(entry,c,index,total){const pan=total<=1?0:-.85+1.7*(index/(total-1));const beat=60/Number($('tempo').value);playNotes(entryChord(entry).midiNotes,0,beat*.65,pan,.04,$('playMode').value==='arp');playNotes(candidateChord(c).midiNotes,beat*.72,beat*.8,pan,.05,$('playMode').value==='arp');}
+function midiName(n){return noteNames[((n%12)+12)%12]+(Math.floor(n/12)-1);}
+function deterministicNoise(i,seed){const x=Math.sin((i+1)*(12.9898+seed*.001))*43758.5453;return (x-Math.floor(x))*2-1;}
+function ensureAudio(){
+  if(audio){if(audio.state==='suspended')audio.resume();return audio;}
+  audio=new (window.AudioContext||window.webkitAudioContext)();
+  const compressor=audio.createDynamicsCompressor();
+  compressor.threshold.value=-18;compressor.knee.value=16;compressor.ratio.value=3;compressor.attack.value=.004;compressor.release.value=.28;
+  audioMaster=audio.createGain();audioMaster.gain.value=.72;
+  const dry=audio.createGain(),wet=audio.createGain(),room=audio.createConvolver();
+  dry.gain.value=.9;wet.gain.value=.16;
+  const seconds=1.15,length=Math.floor(audio.sampleRate*seconds),impulse=audio.createBuffer(2,length,audio.sampleRate);
+  for(let ch=0;ch<2;ch++){const data=impulse.getChannelData(ch);for(let i=0;i<length;i++){const decay=Math.pow(1-i/length,2.8);data[i]=deterministicNoise(i,ch+37)*decay*.42;}}
+  room.buffer=impulse;
+  audioMaster.connect(dry).connect(compressor);
+  audioMaster.connect(room).connect(wet).connect(compressor);
+  compressor.connect(audio.destination);
+  return audio;
+}
+function pianoNote(midi,when,duration,pan=0,velocity=.7){
+  const ctx=ensureAudio(),frequency=midiHz(midi),panner=ctx.createStereoPanner(),noteBus=ctx.createGain();
+  panner.pan.value=Math.max(-1,Math.min(1,pan));noteBus.gain.value=1;noteBus.connect(panner).connect(audioMaster);
+  const partials=[
+    {ratio:1,level:1,life:1.35},
+    {ratio:2.003,level:.38,life:.92},
+    {ratio:3.012,level:.18,life:.62},
+    {ratio:4.027,level:.085,life:.43},
+    {ratio:5.045,level:.038,life:.30}
+  ];
+  partials.forEach((partial,index)=>{
+    const osc=ctx.createOscillator(),g=ctx.createGain(),peak=.115*velocity*partial.level;
+    osc.type='sine';osc.frequency.value=frequency*partial.ratio;osc.detune.value=(index-1)*.35;
+    g.gain.setValueAtTime(.0001,when);
+    g.gain.exponentialRampToValueAtTime(Math.max(.0002,peak),when+.006+index*.0015);
+    g.gain.exponentialRampToValueAtTime(Math.max(.0001,peak*.52),when+.075);
+    g.gain.exponentialRampToValueAtTime(.0001,when+Math.max(.28,duration*partial.life));
+    osc.connect(g).connect(noteBus);osc.start(when);osc.stop(when+Math.max(.38,duration*partial.life)+.08);
+  });
+  const hammerLength=Math.max(32,Math.floor(ctx.sampleRate*.018)),hammerBuffer=ctx.createBuffer(1,hammerLength,ctx.sampleRate),hammer=hammerBuffer.getChannelData(0);
+  for(let i=0;i<hammerLength;i++)hammer[i]=deterministicNoise(i,midi+11)*Math.pow(1-i/hammerLength,4);
+  const source=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),hammerGain=ctx.createGain();
+  source.buffer=hammerBuffer;filter.type='bandpass';filter.frequency.value=Math.min(5200,Math.max(900,frequency*5.5));filter.Q.value=.75;
+  hammerGain.gain.setValueAtTime(.024*velocity,when);hammerGain.gain.exponentialRampToValueAtTime(.0001,when+.025);
+  source.connect(filter).connect(hammerGain).connect(noteBus);source.start(when);source.stop(when+.03);
+}
+function playNotes(notes,start,duration,pan=0,gain=.055,arp=false){
+  const ctx=ensureAudio(),now=ctx.currentTime+start,velocity=Math.max(.35,Math.min(.95,gain/.07));
+  const step=Math.max(.11,Math.min(.24,duration*.28));
+  notes.forEach((m,i)=>pianoNote(m,now+(arp?i*step:i*.004),duration+(arp ? .22 : 0),pan,velocity*(1-i*.025)));
+}
+function renderAudioGuide(chord){
+  if(!chord||!$('audioGuide'))return;
+  const names=chord.midiNotes.map(midiName),mode=$('playMode').value,perspective={global:'Partida completa',white:'Percepción de Blancas',black:'Percepción de Negras'}[perspectiveKey()];
+  if(mode==='arp'){
+    $('audioGuide').innerHTML='<strong>'+escapeHtml(chord.symbol)+'</strong> · '+escapeHtml(perspective)+' · <span class="noteFlow">'+names.map(escapeHtml).join(' → ')+'</span><br><small>Arpegio: es el mismo acorde-resumen de la posición, pero sus notas suenan de grave a agudo una por una. No es una nota por pieza.</small>';
+  }else{
+    $('audioGuide').innerHTML='<strong>'+escapeHtml(chord.symbol)+'</strong> · '+escapeHtml(perspective)+' · <span class="noteFlow">'+names.map(escapeHtml).join(' + ')+'</span><br><small>Acorde: todas las notas del resumen armónico de la posición suenan juntas. No es una nota por pieza.</small>';
+  }
+}
+function playChord(notes,pan=0,delay=0){const beat=60/Number($('tempo').value);playNotes(notes,delay,Math.max(.9,beat*1.8),pan,.062,$('playMode').value==='arp');}
+function playCandidate(entry,c,index,total){const pan=total<=1?0:-.78+1.56*(index/(total-1));const beat=60/Number($('tempo').value);playNotes(entryChord(entry).midiNotes,0,Math.max(.7,beat*1.25),pan,.048,$('playMode').value==='arp');playNotes(candidateChord(c).midiNotes,beat*1.05,Math.max(.85,beat*1.5),pan,.058,$('playMode').value==='arp');}
 $('playPosition').onclick=()=>game&&playChord(entryChord(game.timeline[ply]).midiNotes);
 $('compareBtn').onclick=()=>{if(!game)return;const e=game.timeline[ply],d=e.decision;if(!d)return;const picks=[...document.querySelectorAll('.voicePick:checked')].slice(0,10).map(x=>Number(x.dataset.index));picks.forEach((idx,i)=>playCandidate(e,d.candidates[idx],i,picks.length));};
+$('playMode').onchange=()=>game&&renderAudioGuide(entryChord(game.timeline[ply]));
 $('tempo').oninput=e=>$('tempoValue').textContent=e.target.value;
 
 function go(where){if(!game)return;const max=game.timeline.length-1;ply=where==='start'?0:where==='end'?max:where==='prev'?Math.max(0,ply-1):Math.min(max,ply+1);render();}
