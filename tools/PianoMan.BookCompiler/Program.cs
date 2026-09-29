@@ -9,13 +9,13 @@ const string StockfishCommit = "65815ccdbc7727cd4f6aee252ba8f67fb740e92f";
 const string LichessCommit = "c67912be581f0793dbaa776be5ccf111e01f88d9";
 const string ExpectedZipSha = "14d9bc9fce1fd96b58d2814fe7ab5b0967109c8411570a0d114558e13ad28fce";
 const string ExpectedPgnSha = "7b3ede8b13736df09c7c8560a16dd0068c7247cf8cbdec4052073329fff3fb0e";
-const string ExpectedCompressedSha = "36cd056f0fdea527c25fa40b184ae26ef0f5eafb9722a796be9cae0d36927d47";
+const string ExpectedCompressedSha = "6b7a83ce712e6de9f6e0b5a01d76203a25b4f208a57e7cc3a8c6c1623ed6e70b";
 const int ExpectedPositions = 251_274;
 const int ExpectedContinuations = 420_150;
 const int ExpectedOpenings = 3_329;
 const int ExpectedMaxPlies = 36;
-const int ExpectedRawBytes = 7_586_743;
-const int ExpectedCompressedBytes = 2_910_309;
+const int ExpectedRawBytes = 6_713_123;
+const int ExpectedCompressedBytes = 2_794_787;
 const int ExpectedStockfishGames = 198_350;
 
 var options = ParseArgs(args);
@@ -77,28 +77,68 @@ foreach (var fileName in new[] { "a.tsv", "b.tsv", "c.tsv", "d.tsv", "e.tsv" })
 var rawPath = Path.Combine(outputDir, "theory-book-v1.bin");
 var compressedPath = Path.Combine(outputDir, "theory-book-v1.bin.br");
 var manifestPath = Path.Combine(outputDir, "theory-book-v1.manifest.json");
-var result = builder.Write(rawPath);
-using (var input = File.OpenRead(rawPath))
-using (var output = File.Create(compressedPath))
-using (var brotli = new BrotliStream(output, CompressionLevel.SmallestSize)) input.CopyTo(brotli);
-var compressedSha = Sha(compressedPath);
-var compressedBytes = checked((int)new FileInfo(compressedPath).Length);
+var tempRawPath = rawPath + ".tmp";
+var tempCompressedPath = compressedPath + ".tmp";
+var tempManifestPath = manifestPath + ".tmp";
 
-var failures = new List<string>();
-Check(result.Positions, ExpectedPositions, "positions", failures);
-Check(result.Continuations, ExpectedContinuations, "continuations", failures);
-Check(result.Openings, ExpectedOpenings, "opening identities", failures);
-Check(result.MaxPlies, ExpectedMaxPlies, "max plies", failures);
-Check(result.RawBytes, ExpectedRawBytes, "raw bytes", failures);
-Check(compressedBytes, ExpectedCompressedBytes, "compressed bytes", failures);
-if (!compressedSha.Equals(ExpectedCompressedSha, StringComparison.OrdinalIgnoreCase)) failures.Add($"compressed SHA-256 expected {ExpectedCompressedSha}, got {compressedSha}");
-if (failures.Count != 0) throw new InvalidDataException("Pinned corpus did not reproduce the v1 artifact:\n- " + string.Join("\n- ", failures));
+DeleteIfExists(tempRawPath);
+DeleteIfExists(tempCompressedPath);
+DeleteIfExists(tempManifestPath);
 
-var metadata = new TheoryBookMetadata("1", result.Positions, result.Continuations, result.Openings, result.MaxPlies, result.RawBytes, compressedBytes, compressedSha, StockfishCommit, LichessCommit, ExpectedZipSha, ExpectedPgnSha);
-File.WriteAllText(manifestPath, JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true }) + Environment.NewLine);
-File.Delete(rawPath);
-Console.WriteLine($"positions={result.Positions} continuations={result.Continuations} openings={result.Openings} maxPlies={result.MaxPlies}");
-Console.WriteLine($"compressed={compressedBytes} sha256={compressedSha}");
+try
+{
+    var result = builder.Write(tempRawPath);
+    using (var input = File.OpenRead(tempRawPath))
+    using (var output = File.Create(tempCompressedPath))
+    using (var brotli = new BrotliStream(output, CompressionLevel.SmallestSize))
+        input.CopyTo(brotli);
+
+    var compressedSha = Sha(tempCompressedPath);
+    var compressedBytes = checked((int)new FileInfo(tempCompressedPath).Length);
+
+    var failures = new List<string>();
+    Check(result.Positions, ExpectedPositions, "positions", failures);
+    Check(result.Continuations, ExpectedContinuations, "continuations", failures);
+    Check(result.Openings, ExpectedOpenings, "opening identities", failures);
+    Check(result.MaxPlies, ExpectedMaxPlies, "max plies", failures);
+    Check(result.RawBytes, ExpectedRawBytes, "raw bytes", failures);
+    Check(compressedBytes, ExpectedCompressedBytes, "compressed bytes", failures);
+    if (!compressedSha.Equals(ExpectedCompressedSha, StringComparison.OrdinalIgnoreCase))
+        failures.Add($"compressed SHA-256 expected {ExpectedCompressedSha}, got {compressedSha}");
+
+    if (failures.Count != 0)
+        throw new InvalidDataException("Pinned corpus did not reproduce the v1 artifact:\n- " + string.Join("\n- ", failures));
+
+    var metadata = new TheoryBookMetadata(
+        "1",
+        result.Positions,
+        result.Continuations,
+        result.Openings,
+        result.MaxPlies,
+        result.RawBytes,
+        compressedBytes,
+        compressedSha,
+        StockfishCommit,
+        LichessCommit,
+        ExpectedZipSha,
+        ExpectedPgnSha);
+
+    File.WriteAllText(
+        tempManifestPath,
+        JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true }) + Environment.NewLine);
+
+    File.Move(tempCompressedPath, compressedPath, overwrite: true);
+    File.Move(tempManifestPath, manifestPath, overwrite: true);
+
+    Console.WriteLine($"positions={result.Positions} continuations={result.Continuations} openings={result.Openings} maxPlies={result.MaxPlies}");
+    Console.WriteLine($"compressed={compressedBytes} sha256={compressedSha}");
+}
+finally
+{
+    DeleteIfExists(tempRawPath);
+    DeleteIfExists(tempCompressedPath);
+    DeleteIfExists(tempManifestPath);
+}
 
 static Dictionary<string,string> ParseArgs(string[] args)
 {
@@ -110,6 +150,7 @@ static string Required(Dictionary<string,string> d,string key)=>d.TryGetValue(ke
 static string Sha(string p)=>Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(p)));
 static void VerifySha(string path,string expected,string label){var actual=Sha(path);if(!actual.Equals(expected,StringComparison.OrdinalIgnoreCase))throw new InvalidDataException($"{label} SHA-256 mismatch: {actual}.");}
 static void Check(int actual,int expected,string label,List<string> errors){if(actual!=expected)errors.Add($"{label} expected {expected}, got {actual}");}
+static void DeleteIfExists(string path){if(File.Exists(path))File.Delete(path);}
 
 sealed class Builder
 {

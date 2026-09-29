@@ -12,7 +12,7 @@ Piano Man is a .NET 10 research project that represents chess positions as harmo
 
 Before each played move:
 
-- if the position and move exist in the theory corpus, Piano Man shows **`TEORÍA · SIN BÚSQUEDA`**, ranks continuations by corpus weight, and does not assign harmonic loss;
+- if the position and move exist in the theory corpus, Piano Man shows **`TEORÍA · SIN BÚSQUEDA`**, restricts candidates to known theory, recommends the most harmonious continuation and uses corpus weight only as a deterministic tie-breaker;
 - otherwise it shows **`Afinando…`**, evaluates every legal move at one static ply from the moving player's perspective, retains the top ten plus the played move, and reports its rank/loss.
 
 The provisional Piano Man loss bands are: `0 Best`, `1–15 Excellent`, `16–40 Good`, `41–80 Inaccuracy`, `81–160 Mistake`, and `>160 Blunder`. The web UI translates them to Spanish and keeps the model attribution visible.
@@ -73,9 +73,9 @@ Pinned v1 target:
 - 420,150 continuations;
 - 3,329 ECO/name identities;
 - 36 plies maximum;
-- 7,586,743 raw bytes;
-- approximately 2,910,309 Brotli bytes;
-- SHA-256 `36cd056f0fdea527c25fa40b184ae26ef0f5eafb9722a796be9cae0d36927d47`.
+- 6,713,123 raw bytes;
+- 2,794,787 Brotli bytes;
+- SHA-256 `6b7a83ce712e6de9f6e0b5a01d76203a25b4f208a57e7cc3a8c6c1623ed6e70b`.
 
 `tools/PianoMan.BookCompiler` is offline and fails on source-hash mismatches, illegal moves, count/size mismatches or a final compressed hash mismatch.
 

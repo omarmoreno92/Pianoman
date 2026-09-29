@@ -10,11 +10,11 @@ Piano Man 0.2 uses a versioned opening corpus so known continuations can be sele
 | Continuations | 420,150 |
 | ECO/name identities | 3,329 |
 | Maximum depth | 36 plies |
-| Raw binary | 7,586,743 bytes |
-| Brotli resource | approximately 2,910,309 bytes |
-| Expected compressed SHA-256 | `36cd056f0fdea527c25fa40b184ae26ef0f5eafb9722a796be9cae0d36927d47` |
+| Raw binary | 6,713,123 bytes |
+| Brotli resource | 2,794,787 bytes |
+| Expected compressed SHA-256 | `6b7a83ce712e6de9f6e0b5a01d76203a25b4f208a57e7cc3a8c6c1623ed6e70b` |
 
-The compiler in `tools/PianoMan.BookCompiler` verifies source hashes and aborts on any illegal source move. It also refuses to publish a v1 artifact if counts, sizes, or the final compressed hash differ from the pinned contract.
+The compiler in `tools/PianoMan.BookCompiler` verifies source hashes and aborts on any illegal source move. The semantic corpus contract is pinned by positions, continuations, identities and depth; the byte-size/SHA values pin Piano Man's current v1 serializer. Generation is transactional: temporary files are validated before the embedded resource and manifest are replaced.
 
 ## Position identity
 
