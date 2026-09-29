@@ -1,5 +1,6 @@
 using PianoMan.Core.Analysis;
 using PianoMan.Core.Chess;
+using PianoMan.Core.Theory;
 
 namespace PianoMan.Tests;
 
@@ -25,6 +26,69 @@ public sealed class HarmonyTests
         Assert.Equal("Cmaj",p.Global.Chord.Symbol);
         Assert.Equal("Cmaj",p.White.Chord.Symbol);
         Assert.Equal("Cmaj",p.Black.Chord.Symbol);
+        Assert.Equal(0,p.Global.Tension);
+        Assert.Equal(0,p.White.Tension);
+        Assert.InRange(p.Black.Tension,1,4);
+    }
+
+    [Fact]
+    public void InitialPositionAssignsOneConsonantVoiceToEveryPiece()
+    {
+        var game=PgnReader.Read("1. e4 *");
+        var entry=GameAnalyzer.Analyze(game,TheoryBook.LoadEmbedded()).Timeline[0];
+        var chordPitchClasses=entry.Perception.Global.Chord.MidiNotes.Select(note=>note%12).ToHashSet();
+
+        Assert.Equal(32,entry.Voicing.Global.Count);
+        Assert.Equal(32,entry.Voicing.White.Count);
+        Assert.Equal(32,entry.Voicing.Black.Count);
+        Assert.All(entry.Voicing.Global,voice=>Assert.Contains(voice.MidiNote%12,chordPitchClasses));
+    }
+
+    [Fact]
+    public void EveryFirstPlyTheoryContinuationHasZeroGlobalDissonance()
+    {
+        var book=TheoryBook.LoadEmbedded();
+        var lookup=book.Lookup(Position.Initial);
+        Assert.NotNull(lookup);
+
+        foreach(var continuation in lookup!.Continuations)
+        {
+            var move=PackedMove.Resolve(Position.Initial,continuation.PackedMove);
+            var entry=GameAnalyzer.AnalyzeContinuation(Position.Initial,move,1,book);
+            Assert.Equal(AnalysisMode.Theory,entry.Decision!.Mode);
+            Assert.Equal(0,entry.Perception.Global.Tension);
+        }
+    }
+
+    [Fact]
+    public void CommonCentralOpeningsStaySettledWhileWingOpeningsColorWhitePerspective()
+    {
+        var book=TheoryBook.LoadEmbedded();
+        var perceptions=new Dictionary<string,HarmonicPerception>();
+        foreach(var san in new[]{"e4","d4","c4","f4","b4"})
+        {
+            var move=SanParser.Parse(Position.Initial,san);
+            perceptions[san]=GameAnalyzer.AnalyzeContinuation(Position.Initial,move,1,book).Perception.White;
+        }
+
+        Assert.Equal(0,perceptions["e4"].Tension);
+        Assert.Equal(0,perceptions["d4"].Tension);
+        Assert.Equal(0,perceptions["c4"].Tension);
+        Assert.Equal(1,perceptions["f4"].Tension);
+        Assert.Equal(2,perceptions["b4"].Tension);
+    }
+
+    [Fact]
+    public void ABadMoveOutsideTheoryCreatesDissonanceWhileTacticsRemainEnergy()
+    {
+        var position=Fen.Parse("4k3/8/8/8/8/8/3q4/3QK3 w - - 0 1");
+        var move=UciParser.Parse(position,"e1f1");
+        var entry=GameAnalyzer.AnalyzeContinuation(position,move,1,TheoryBook.LoadEmbedded());
+
+        Assert.Equal(AnalysisMode.Tuning,entry.Decision!.Mode);
+        Assert.True(entry.Decision.Loss>0);
+        Assert.True(entry.Perception.Global.Tension>0);
+        Assert.Equal(entry.Harmony.Tension,entry.Perception.Global.Energy);
     }
 
     [Fact]

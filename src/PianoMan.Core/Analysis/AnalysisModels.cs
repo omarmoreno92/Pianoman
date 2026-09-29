@@ -6,14 +6,19 @@ public enum PianoMoveClass:byte { Best=0,Excellent=1,Good=2,Inaccuracy=3,Mistake
 public enum PianoManPersona:byte { PianoMan=0,RadioKiller=1 }
 public enum ListeningPerspective:byte { Global=0,White=1,Black=2 }
 
-public sealed record HarmonicPerception(ListeningPerspective Perspective,int Score,int Tension,MusicalChord Chord);
+public sealed record HarmonicPerception(ListeningPerspective Perspective,int Score,int Tension,int Energy,MusicalChord Chord);
 public sealed record PositionPerception(HarmonicPerception Global,HarmonicPerception White,HarmonicPerception Black);
 public sealed record PerceptionDelta(int GlobalScore,int WhiteScore,int BlackScore,int GlobalTension,int WhiteTension,int BlackTension);
+public sealed record SonificationContext(bool InTheory,int? MoveLoss);
+public sealed record PieceVoice(string Id,string Square,string Color,string Piece,int MidiNote,double DetuneCents,double Velocity);
+public sealed record PositionVoicing(IReadOnlyList<PieceVoice> Global,IReadOnlyList<PieceVoice> White,IReadOnlyList<PieceVoice> Black);
+public sealed record LegalMoveOption(string From,string To,string Uci,string San,string? Promotion);
 
 public sealed record CandidateAnalysis(
     int Rank,
     string San,
     string Uci,
+    string Fen,
     int? Score,
     uint? Weight,
     int? Loss,
@@ -54,6 +59,8 @@ public sealed record MoveAnalysis(
     string? Eco,
     string? Opening,
     bool InTheory,
-    MoveDecision? Decision);
+    MoveDecision? Decision,
+    PositionVoicing Voicing,
+    IReadOnlyList<LegalMoveOption> LegalMoves);
 
 public sealed record GameAnalysis(string Title,string? Event,string? White,string? Black,string? Result,List<MoveAnalysis> Timeline,string FinalFen);

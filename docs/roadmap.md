@@ -1,5 +1,12 @@
 # Roadmap
 
+## 0.3 — Consonance and free analysis
+
+- Separate move dissonance from tactical energy and side-relative discomfort.
+- Keep every theoretical continuation globally consonant.
+- Render one deterministic voice per live piece in chord and arpeggio modes.
+- Create legal click-to-move branches from any PGN timeline position.
+
 ## 0.2 — Theory Book Player
 
 - Pinned CC0 theory corpus and offline compiler.

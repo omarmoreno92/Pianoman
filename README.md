@@ -1,14 +1,14 @@
-# Piano Man 0.2
+# Piano Man 0.3
 
 **How chess sounds.**
 
 Piano Man asks whether chess structure can be represented musically well enough that a human can *hear* development, balance, pressure, mistakes and recovery instead of learning those ideas only as notation or engine numbers.
 
-Piano Man is a .NET 10 research project that represents chess positions as harmonic structures and lets a user hear a game while inspecting deterministic chess signals. Version 0.2 adds a versioned opening-book path, a deterministic one-ply fallback outside theory, and a web PGN player with Web Audio.
+Piano Man is a .NET 10 research project that represents chess positions as harmonic structures and lets a user hear a game while inspecting deterministic chess signals. Version 0.3 separates error dissonance from tactical energy, gives every live piece an audible voice, and lets the user branch freely from any PGN position.
 
 > The harmonic model, candidate-loss thresholds and quality labels are Piano Man's experimental model. They are not Stockfish judgments and are not playing-strength claims.
 
-## 0.2 behavior
+## 0.3 behavior
 
 Before each played move:
 
@@ -17,7 +17,15 @@ Before each played move:
 
 The provisional Piano Man loss bands are: `0 Best`, `1–15 Excellent`, `16–40 Good`, `41–80 Inaccuracy`, `81–160 Mistake`, and `>160 Blunder`. The web UI translates them to Spanish and keeps the model attribution visible.
 
-Theory membership defines the admissible opening continuations. Piano Man then chooses among those theoretical continuations by its harmonic score; corpus weight is a deterministic tie-breaker. This is not a tree search and a theoretical move can still sound tense.
+Theory membership defines the admissible opening continuations. Piano Man then chooses among those theoretical continuations by its harmonic score; corpus weight is a deterministic tie-breaker. A theoretical continuation has zero global dissonance. Sharpness remains audible as **tactical energy**, while a side that is worse can hear mild perspective-specific discomfort.
+
+The auditory model keeps three independent signals:
+
+- **dissonance**: the measured loss of the played move outside theory;
+- **energy**: attacks, captures, checks and board contact, without implying an error;
+- **perspective discomfort**: the disadvantage experienced by White or Black.
+
+Every live piece contributes one deterministic piano voice. The initial board therefore plays 32 voices, all quantized to the initial C harmony. Chord mode plays those voices together; arpeggio mode plays every piece one at a time.
 
 Every position now exposes three simultaneous listening perspectives: **Global**, **White**, and **Black**. The same board can therefore remain globally coherent while becoming increasingly uncomfortable for one side.
 
@@ -34,16 +42,18 @@ Open the URL printed by ASP.NET Core. The UI supports:
 - multiple games per PGN;
 - board from FEN with last-move highlighting;
 - first/previous/next/last controls and keyboard arrows;
+- legal click-to-move branching from any loaded PGN position, with a one-click return to the original PGN;
 - complete move timeline;
 - ECO/name and theory state;
 - chord, MIDI notes, tension, balance and all eight harmonic components;
 - candidate rank, SAN/UCI, weight/score/loss, chord and tension;
-- Web Audio chord/arpeggio playback, tempo, autoplay and independent candidate voices;
+- Web Audio chord/arpeggio playback with one voice per live piece, tempo, autoplay and independent candidate voices;
 - listen-first **Marcar disonancia** observations and JSON export for later external-engine comparison.
 
 API endpoints:
 
 - `POST /api/analyze`
+- `POST /api/move`
 - `GET /api/demo`
 - `GET /api/health`
 
@@ -65,7 +75,7 @@ The CLI remains a Native AOT target.
 
 The intended release book is a broad, reproducible and versioned CC0 corpus compiled from pinned `official-stockfish/books` and `lichess-org/chess-openings` inputs. It must **not** be described as “all known theory”. See [`docs/theory-book.md`](docs/theory-book.md) and [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
-> **Repository resource note:** the checked-in `theory-book-v1.bin.br` is a 69-byte bootstrap fixture used to exercise the loader/UI in constrained development environments. It is **not** the pinned release corpus. A release build must run `PianoMan.BookCompiler` against the pinned inputs and reproduce the v1 counts/hash below before replacing that fixture.
+The checked-in `theory-book-v1.bin.br` is the pinned release artifact. A rebuild must run `PianoMan.BookCompiler` against the pinned inputs and reproduce the v1 counts/hash below before replacing it.
 
 Pinned v1 target:
 

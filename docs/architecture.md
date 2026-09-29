@@ -38,4 +38,4 @@ All legal children are statically evaluated one ply. Static quality defines a co
 
 A move with loss >= 81 marks an opportunity for the opponent. If the resulting advantage persists, Radio Killer uses the same correctness window and maximizes the opponent's perceived tension before harmonic/score tie-breakers. It cannot intentionally leave the quality window merely to create dissonance. When the advantage dissipates, behavior returns to Piano Man.
 
-No engine search is multithreaded in 0.2. Web Audio voices are independent audio graphs only.
+No engine search is multithreaded in 0.3. Web Audio voices are independent audio graphs only; each live piece owns one voice.

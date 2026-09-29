@@ -57,6 +57,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
 });
 var app = builder.Build();
+var theoryBook = TheoryBook.LoadEmbedded();
 app.Use(async (context, next) =>
 {
     if (context.Request.ContentLength is > MaxPgnBytes)
@@ -69,7 +70,7 @@ app.Use(async (context, next) =>
 });
 app.UseDefaultFiles();
 app.UseStaticFiles();
-app.MapGet("/api/health", () => Results.Ok(new { status = "ok", version = "0.2" }));
+app.MapGet("/api/health", () => Results.Ok(new { status = "ok", version = "0.3" }));
 app.MapGet("/api/demo", () => Results.Text(DemoPgn, "application/x-chess-pgn"));
 app.MapGet("/api/demo/evergreen", () => Results.Text(EvergreenPgn, "application/x-chess-pgn"));
 app.MapGet("/api/demo/immortal", () => Results.Text(ImmortalPgn, "application/x-chess-pgn"));
@@ -83,14 +84,30 @@ app.MapPost("/api/analyze", async (HttpRequest request) =>
     try
     {
         var games = PgnReader.ReadMany(input.Pgn);
-        var book = TheoryBook.LoadEmbedded();
-        var analyses = games.Select(g => GameAnalyzer.Analyze(g, book)).ToArray();
-        return Results.Ok(new { games = analyses, book = book.Metadata, modelNotice = "Las clasificaciones Best/Excellent/Good/Inaccuracy/Mistake/Blunder pertenecen al modelo de Piano Man; no son etiquetas de Stockfish.", theoryNotice = "El libro es un corpus CC0 versionado. Una jugada teórica no tiene por qué sonar consonante: el acorde representa la función matemática actual, no una prueba independiente de corrección." });
+        var analyses = games.Select(g => GameAnalyzer.Analyze(g, theoryBook)).ToArray();
+        return Results.Ok(new { games = analyses, book = theoryBook.Metadata, modelNotice = "Las clasificaciones Best/Excellent/Good/Inaccuracy/Mistake/Blunder pertenecen al modelo de Piano Man; no son etiquetas de Stockfish.", theoryNotice = "Dentro del corpus, la teoría conserva consonancia: la agudeza se expresa como energía y la desventaja como incomodidad de cada perspectiva. La disonancia global aparece al apartarse de una continuación correcta." });
     }
     catch (Exception ex) when (ex is FormatException or InvalidOperationException or InvalidDataException)
     {
         return Results.BadRequest(new { error = ex.Message });
     }
 });
+app.MapPost("/api/move", (MoveRequest input) =>
+{
+    if(string.IsNullOrWhiteSpace(input.Fen)||string.IsNullOrWhiteSpace(input.Uci))
+        return Results.BadRequest(new { error = "Se requieren FEN y jugada UCI." });
+    try
+    {
+        var position=Fen.Parse(input.Fen);
+        var move=UciParser.Parse(position,input.Uci);
+        var entry=GameAnalyzer.AnalyzeContinuation(position,move,Math.Max(1,input.Ply),theoryBook);
+        return Results.Ok(new { entry });
+    }
+    catch(Exception ex) when(ex is FormatException or InvalidOperationException or InvalidDataException)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+});
 app.Run();
 public sealed record AnalyzeRequest(string Pgn);
+public sealed record MoveRequest(string Fen,string Uci,int Ply);

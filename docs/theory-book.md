@@ -1,6 +1,6 @@
 # Theory book v1
 
-Piano Man 0.2 uses a versioned opening corpus so known continuations can be selected without search. This is **not** a claim to contain all known chess theory. The intended v1 corpus combines pinned CC0 sources from `official-stockfish/books` and `lichess-org/chess-openings`.
+Piano Man uses a versioned opening corpus so known continuations can be selected without search. This is **not** a claim to contain all known chess theory. The v1 corpus combines pinned CC0 sources from `official-stockfish/books` and `lichess-org/chess-openings`.
 
 ## Pinned corpus contract
 
