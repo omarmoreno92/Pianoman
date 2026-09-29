@@ -16,7 +16,7 @@ $('fileInput').onchange = e => loadFile(e.target.files[0]);
 ['dragleave','drop'].forEach(name => drop.addEventListener(name, e => {e.preventDefault();drop.classList.remove('drag');}));
 drop.addEventListener('drop', e => loadFile(e.dataTransfer.files[0]));
 async function loadFile(file){if(!file)return;if(file.size>MAX_BYTES){showError('El archivo supera 2 MB.');return;}$('pgnText').value=await file.text();}
-$('demoBtn').onclick = async () => {$('pgnText').value = await (await fetch('/api/demo')).text();await analyze();};
+document.querySelectorAll('[data-demo]').forEach(button=>button.onclick=async()=>{$('pgnText').value=await (await fetch(button.dataset.demo)).text();await analyze();});
 $('analyzeBtn').onclick = analyze;
 $('gameSelect').onchange = e => selectGame(Number(e.target.value));
 $('listeningPerspective').onchange = () => render();

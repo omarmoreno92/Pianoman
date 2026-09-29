@@ -15,8 +15,8 @@ public static class PerceptionAnalyzer
 
         return new PositionPerception(
             new HarmonicPerception(ListeningPerspective.Global,globalScore,harmony.Tension,ChordMapper.MapGlobal(harmony)),
-            new HarmonicPerception(ListeningPerspective.White,harmony.RelativeScore,whiteTension,ChordMapper.MapPerspective(harmony.RelativeScore,whiteTension)),
-            new HarmonicPerception(ListeningPerspective.Black,-harmony.RelativeScore,blackTension,ChordMapper.MapPerspective(-harmony.RelativeScore,blackTension)));
+            new HarmonicPerception(ListeningPerspective.White,harmony.RelativeScore,whiteTension,ChordMapper.MapPerspective(harmony,Color.White,whiteTension)),
+            new HarmonicPerception(ListeningPerspective.Black,-harmony.RelativeScore,blackTension,ChordMapper.MapPerspective(harmony,Color.Black,blackTension)));
     }
 
     public static HarmonicPerception ForSide(PositionPerception perception,Color side)=>

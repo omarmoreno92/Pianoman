@@ -39,6 +39,17 @@ public sealed class HarmonyTests
     }
 
     [Fact]
+    public void GlobalVoicingChangesWhenSpaceRelationshipChanges()
+    {
+        var initial=GameAnalyzer.Analyze(Position.Initial).Chord;
+        var afterE4=Position.Initial.Clone();
+        afterE4.Apply(SanParser.Parse(afterE4,"e4"));
+        var moved=GameAnalyzer.Analyze(afterE4).Chord;
+
+        Assert.False(initial.MidiNotes.SequenceEqual(moved.MidiNotes));
+    }
+
+    [Fact]
     public void LossClassificationUsesPianoManThresholds()
     {
         Assert.Equal(PianoMoveClass.Best,GameAnalyzer.Classify(0));
