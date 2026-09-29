@@ -32,9 +32,8 @@ public static class PerceptionAnalyzer
 
     private static int AudibleTension(HarmonySnapshot harmony,SonificationContext context)
     {
-        if(context.InTheory)return 0;
-        if(context.MoveLoss is not int loss)return Math.Min(40,harmony.Tension/6);
-        return loss switch
+        if(context.MoveLoss is not int loss)return context.InTheory?0:Math.Min(40,harmony.Tension/6);
+        var tension=loss switch
         {
             <=0=>0,
             <=15=>4,
@@ -43,6 +42,7 @@ public static class PerceptionAnalyzer
             <=160=>70,
             _=>Math.Clamp(110+((loss-160)/4),110,200)
         };
+        return context.InTheory?tension/2:tension;
     }
 
     private static int PerspectiveTension(HarmonySnapshot harmony,Color side,int globalTension)

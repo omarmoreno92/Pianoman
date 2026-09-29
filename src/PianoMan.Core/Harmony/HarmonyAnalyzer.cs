@@ -11,7 +11,7 @@ public sealed class HarmonyAnalyzer
         var material=0;var defended=0;foreach(var(s,piece)in p.Pieces()){if(piece.Color!=color)continue;material+=PieceValue(piece.Type);if(piece.Type!=PieceType.King&&MoveGenerator.IsSquareAttacked(p,s,color))defended++;}var attacked=MoveGenerator.CountAttackedSquares(p,color);return new SideHarmony(material,attacked*2,defended*4,EvaluateKingSafety(p,color),CountSpace(p,color),EvaluatePawnStructure(p,color),EvaluatePressure(p,color),p.SideToMove==color?8:0);
     }
     private static int CountSpace(Position p,Color color){var count=0;var first=color==Color.White?4:0;var last=color==Color.White?7:3;for(var r=first;r<=last;r++)for(var f=0;f<8;f++)if(MoveGenerator.IsSquareAttacked(p,Square.FromCoordinates(f,r),color))count+=2+CenterWeight(f);return count;}
-    private static int CenterWeight(int file)=>file switch{3 or 4=>10,2 or 5=>3,1 or 6=>1,_=>0};
+    private static int CenterWeight(int file)=>file switch{3 or 4=>2,2 or 5=>1,_=>0};
     private static int EvaluatePawnStructure(Position p,Color color)
     {
         var files=Enumerable.Range(0,8).Select(_=>new List<int>()).ToArray();foreach(var(s,piece)in p.Pieces())if(piece==new Piece(color,PieceType.Pawn))files[Square.File(s)].Add(Square.Rank(s));var score=0;for(var f=0;f<8;f++){var ranks=files[f];if(ranks.Count>1)score-=(ranks.Count-1)*12;foreach(var rank in ranks){if(!HasPawn(files,f-1)&&!HasPawn(files,f+1))score-=8;if(Connected(files,f,rank))score+=4;if(IsPassed(p,color,f,rank)){var advance=color==Color.White?rank-1:6-rank;score+=5+Math.Max(0,advance)*3;}}}return score;

@@ -26,7 +26,7 @@ The resource starts with a versioned header, followed by a hash-sorted position 
 
 ## Selection versus sonification
 
-If a played move is in the current book position, analysis mode is `Theory` and the UI shows `TEORÍA · SIN BÚSQUEDA`. Book membership restricts the candidates to known theoretical continuations. Piano Man then projects only those continuations through its one-ply harmonic model and recommends the most harmonious continuation; corpus weight breaks deterministic ties. This is deliberately different from searching every legal move. A theoretical move may still sound dissonant: the chord is a mathematical representation, not an independent correctness oracle.
+If a played move is in the current book position, analysis mode is `Theory` and the UI shows `TEORÍA · SIN BÚSQUEDA`. Book membership restricts the candidates to known theoretical continuations. Piano Man projects only those continuations through its one-ply harmonic model and adds a bounded logarithmic prior (`0..32`) from stored continuation support. Dissonance is the gap to the best resulting theory candidate, not a table written by opening name. Corpus frequency is evidence of theoretical support, not an independent proof of chess correctness.
 
 ## Reproduction
 
