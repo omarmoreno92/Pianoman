@@ -9,3 +9,5 @@ artifacts/
 publish/
 *.DotSettings.user
 tools/PianoMan.BookCompiler/input/
+
+src/PianoMan.Core/Resources/theory-book-v1.bin

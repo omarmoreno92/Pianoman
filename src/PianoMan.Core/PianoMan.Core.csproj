@@ -4,7 +4,7 @@
     <AssemblyName>PianoMan.Core</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources/theory-book-v1.bin.br" LogicalName="PianoMan.Core.Resources.theory-book-v1.bin.br" />
+    <EmbeddedResource Include="Resources/theory-book-v1.bin.br" LogicalName="PianoMan.Core.Resources.theory-book-v1.bin.br" WithCulture="false" />
     <EmbeddedResource Include="Resources/theory-book-v1.manifest.json" LogicalName="PianoMan.Core.Resources.theory-book-v1.manifest.json" />
   </ItemGroup>
 </Project>
