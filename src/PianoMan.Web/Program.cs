@@ -108,6 +108,21 @@ app.MapPost("/api/move", (MoveRequest input) =>
         return Results.BadRequest(new { error = ex.Message });
     }
 });
+app.MapPost("/api/principal-line", (PrincipalLineRequest input) =>
+{
+    if(string.IsNullOrWhiteSpace(input.Fen))return Results.BadRequest(new { error = "Se requiere una posición FEN." });
+    try
+    {
+        var position=Fen.Parse(input.Fen);
+        var line=HarmonicLineAnalyzer.Analyze(position,theoryBook,input.MaxPlies??8);
+        return Results.Ok(new { line });
+    }
+    catch(Exception ex) when(ex is FormatException or InvalidOperationException or InvalidDataException)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+});
 app.Run();
 public sealed record AnalyzeRequest(string Pgn);
 public sealed record MoveRequest(string Fen,string Uci,int Ply);
+public sealed record PrincipalLineRequest(string Fen,int? MaxPlies);

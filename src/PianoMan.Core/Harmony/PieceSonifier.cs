@@ -5,18 +5,18 @@ namespace PianoMan.Core.Harmony;
 
 public static class PieceSonifier
 {
-    public static PositionVoicing Map(Position position,PositionPerception perception)
+    public static PositionVoicing Map(Position position,PositionPerception perception,PieceMovementContext? movement=null)
     {
         ArgumentNullException.ThrowIfNull(position);
         ArgumentNullException.ThrowIfNull(perception);
 
         return new PositionVoicing(
-            Build(position,perception.Global,null),
-            Build(position,perception.White,Color.White),
-            Build(position,perception.Black,Color.Black));
+            Build(position,perception.Global,null,movement),
+            Build(position,perception.White,Color.White,movement),
+            Build(position,perception.Black,Color.Black,movement));
     }
 
-    private static List<PieceVoice> Build(Position position,HarmonicPerception perception,Color? listener)
+    private static List<PieceVoice> Build(Position position,HarmonicPerception perception,Color? listener,PieceMovementContext? movement)
     {
         var pitchClasses=perception.Chord.MidiNotes
             .Select(note=>((note%12)+12)%12)
@@ -28,10 +28,14 @@ public static class PieceSonifier
         var voices=new List<PieceVoice>(32);
         foreach(var(square,piece) in position.Pieces().OrderBy(entry=>entry.Square))
         {
+            var squareName=Square.Name(square);
+            var moved=movement?.To==squareName;
+            var harmonicOffset=moved?DissonantOffset(movement!.Dissonance,Square.File(square)):0;
             var anchor=Register(piece)+Square.File(square)+(Square.Rank(square)*2)+TypeOffset(piece.Type);
-            var midi=NearestChordTone(anchor,pitchClasses);
-            var discomfort=listener==piece.Color?perception.Tension:perception.Tension/3;
-            var detune=discomfort==0?0:Math.Min(28,discomfort/5d)*(Square.File(square)%2==0?-1:1);
+            var midi=NearestChordTone(anchor,pitchClasses)+harmonicOffset;
+            var discomfort=listener==piece.Color?perception.Tension:0;
+            var detune=discomfort==0?0:Math.Min(18,discomfort/7d)*(Square.File(square)%2==0?-1:1);
+            if(moved&&movement!.Dissonance>0)detune+=(Square.File(square)%2==0?-1:1)*Math.Min(35,movement.Dissonance/2d);
             var velocity=piece.Type switch
             {
                 PieceType.Pawn=>0.52,
@@ -41,15 +45,18 @@ public static class PieceSonifier
                 PieceType.King=>0.72,
                 _=>0.5
             };
+            if(moved)velocity=Math.Min(0.92,velocity+0.12);
 
             voices.Add(new PieceVoice(
-                $"{piece.Color}-{piece.Type}-{Square.Name(square)}",
-                Square.Name(square),
+                $"{piece.Color}-{piece.Type}-{squareName}",
+                squareName,
                 piece.Color.ToString(),
                 piece.Type.ToString(),
                 midi,
                 Math.Round(detune,2),
-                velocity));
+                velocity,
+                moved,
+                harmonicOffset));
         }
         return voices;
     }
@@ -66,6 +73,20 @@ public static class PieceSonifier
         PieceType.King=>-7,
         _=>0
     };
+
+    private static int DissonantOffset(int dissonance,int file)
+    {
+        var magnitude=dissonance switch
+        {
+            <4=>0,
+            <12=>1,
+            <30=>1,
+            <70=>2,
+            <110=>6,
+            _=>11
+        };
+        return file%2==0?-magnitude:magnitude;
+    }
 
     private static int NearestChordTone(int target,IReadOnlyList<int> pitchClasses)
     {

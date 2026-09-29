@@ -24,7 +24,7 @@ curl -f -H 'content-type: application/json' \
   http://localhost:5000/api/move
 ```
 
-The full Immortal Game in `samples/immortal-game.pgn` must parse through mate. The initial timeline entry must expose 32 piece voices and every first-ply book continuation must have zero global dissonance. CLI JSON must serialize the new analysis decision/candidate types. CI additionally publishes and executes a Linux Native AOT CLI.
+The full Immortal Game in `samples/immortal-game.pgn` must parse through mate. The initial timeline entry must expose 32 consonant piece voices. Theory loss must equal the computed gap between the played candidate and the best ranked corpus candidate; no expected score is pinned to a named opening. CLI JSON must serialize the new analysis decision/candidate types. CI additionally publishes and executes a Linux Native AOT CLI.
 
 ## Scientific interpretation
 

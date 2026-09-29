@@ -97,6 +97,19 @@ public static class GameAnalyzer
         if(theoryMove is not null)
         {
             var projected=lookup!.Continuations.Select(c=>ProjectTheory(position,side,c)).ToArray();
+            var maximumWeight=projected.Max(x=>x.Weight??0);
+            projected=projected.Select(item=>item with
+            {
+                HarmonyScore=item.HarmonyScore+TheoryPrior(item.Weight??0,maximumWeight)
+            }).ToArray();
+            var bestTheoryScore=projected.Max(x=>x.HarmonyScore);
+            projected=projected.Select(item=>
+            {
+                var theoryLoss=Math.Max(0,bestTheoryScore-item.HarmonyScore);
+                var candidatePerception=PerceptionAnalyzer.Analyze(item.Harmony,new SonificationContext(true,theoryLoss));
+                var own=PerceptionAnalyzer.ForSide(candidatePerception,side);
+                return item with{Perception=candidatePerception,Chord=own.Chord,Tension=own.Tension};
+            }).ToArray();
             var ordered=projected
                 .OrderByDescending(x=>x.HarmonyScore)
                 .ThenByDescending(x=>x.Weight)
@@ -115,7 +128,7 @@ public static class GameAnalyzer
                     item.Fen,
                     null,
                     item.Weight,
-                    null,
+                    Math.Max(0,bestTheoryScore-item.HarmonyScore),
                     item.HarmonyScore,
                     item.Perception,
                     item.Chord,
@@ -125,14 +138,15 @@ public static class GameAnalyzer
             }
 
             var rank=Array.FindIndex(ordered,x=>x.Move==played)+1;
+            var playedLoss=Math.Max(0,bestTheoryScore-ordered[rank-1].HarmonyScore);
             return new MoveDecision(
                 AnalysisMode.Theory,
                 "TEORÍA · SIN BÚSQUEDA",
                 PianoManPersona.PianoMan,
                 ordered.Length,
                 rank,
-                null,
-                null,
+                playedLoss,
+                Classify(playedLoss),
                 false,
                 recommended,
                 lookup.Eco,
@@ -259,6 +273,12 @@ public static class GameAnalyzer
         return new CandidateState(move,score,score-(own.Tension/4),harmony,perception,own.Chord,own.Tension,continuation.Weight,next.ToFen());
     }
 
+    private static int TheoryPrior(uint weight,uint maximumWeight)
+    {
+        if(weight==0||maximumWeight==0)return 0;
+        return (int)Math.Round(32d*Math.Log(1d+weight)/Math.Log(1d+maximumWeight),MidpointRounding.AwayFromZero);
+    }
+
     private static void AddPosition(List<MoveAnalysis> timeline,Position p,int ply,int moveNumber,string side,string san,string uci,MoveDecision? decision,TheoryBook? book,(string From,string To)? last)
     {
         var before=timeline.Count>0?timeline[^1].Perception:null;
@@ -304,7 +324,7 @@ public static class GameAnalyzer
             lookup?.Name,
             lookup is not null,
             decision,
-            PieceSonifier.Map(p,perception),
+            PieceSonifier.Map(p,perception,new PieceMovementContext(last?.From,last?.To,perception.Global.Tension)),
             legalMoves);
     }
 

@@ -2,11 +2,14 @@
 
 ## Unreleased
 
-- Separated move dissonance from tactical energy so theory remains consonant even when sharp.
+- Replaced manually calibrated opening examples with position-derived theory gaps and bounded corpus support.
+- Made the moved piece carry the first audible alteration when a move is dissonant.
+- Added immediate Web Audio stop and an on-demand single principal line with anomaly-only reply extension.
+- Separated move dissonance from tactical energy so sharpness alone is not treated as an error.
 - Added deterministic one-voice-per-piece sonification (32 voices in the initial position).
 - Added legal click-to-move analysis branches from every PGN timeline position and `POST /api/move`.
 - Added Global/White/Black auditory perception and per-move perception deltas.
-- Theory recommendations now choose the most harmonious known continuation with corpus weight as deterministic tie-breaker.
+- Theory recommendations combine harmonic structure with bounded corpus support.
 - Added guarded Piano Man/Radio Killer decision policies outside theory.
 - Added research and educational documentation for the “How Chess Sounds” hypothesis.
 

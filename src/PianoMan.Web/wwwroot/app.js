@@ -19,7 +19,7 @@ async function loadFile(file){if(!file)return;if(file.size>MAX_BYTES){showError(
 document.querySelectorAll('[data-demo]').forEach(button=>button.onclick=async()=>{$('pgnText').value=await (await fetch(button.dataset.demo)).text();await analyze();});
 $('analyzeBtn').onclick = analyze;
 $('gameSelect').onchange = e => selectGame(Number(e.target.value));
-$('listeningPerspective').onchange = () => render();
+$('listeningPerspective').onchange = () => {stopAudio();render();};
 
 async function analyze(){
   showError(''); const pgn=$('pgnText').value.trim(); if(!pgn){showError('Pega o carga un PGN.');return;} if(new TextEncoder().encode(pgn).length>MAX_BYTES){showError('El PGN supera 2 MB.');return;}
@@ -30,7 +30,7 @@ async function analyze(){
     const select=$('gameSelect');select.innerHTML='';data.games.forEach((g,i)=>{const o=document.createElement('option');o.value=i;o.textContent=g.title;select.appendChild(o);});select.hidden=data.games.length<2;selectGame(0);$('workspace').hidden=false;
   }catch(err){showError(err.message);}finally{$('engineState').textContent='Listo';}
 }
-function selectGame(index){game=typeof structuredClone==='function'?structuredClone(payload.games[index]):JSON.parse(JSON.stringify(payload.games[index]));ply=0;selectedSquare=null;$('resetBranch').hidden=true;render();}
+function selectGame(index){game=typeof structuredClone==='function'?structuredClone(payload.games[index]):JSON.parse(JSON.stringify(payload.games[index]));ply=0;selectedSquare=null;$('resetBranch').hidden=true;clearPrincipalLine();stopAudio();render();}
 
 function fenBoard(fen){
   const board=[]; for(const rank of fen.split(' ')[0].split('/')){const row=[];for(const c of rank){if(/\d/.test(c)){for(let i=0;i<Number(c);i++)row.push('');}else row.push(c);}board.push(row);}return board;
@@ -57,7 +57,7 @@ function renderComponents(h,perspective){
 }
 function renderDecision(entry){
   const d=entry.decision;const text=$('decisionText'),host=$('candidateList');host.innerHTML='';if(!d){text.textContent='La posición inicial todavía no evalúa una jugada realizada.';return;}
-  if(d.mode==='theory')text.textContent=`Jugada teórica #${d.rank}. Recomendación ${d.recommendedUci}: mayor armonía entre continuaciones teóricas; el peso del corpus desempata.`;
+  if(d.mode==='theory')text.textContent=`Jugada teórica #${d.rank} · brecha teórico-armónica ${d.loss}. Recomendación ${d.recommendedUci}: soporte del corpus y armonía de la posición, sin reglas escritas para aperturas concretas.`;
   else text.textContent=`${d.persona==='radioKiller'?'Radio Killer':'Piano Man'} · rango ${d.rank} · pérdida ${d.loss} · ${classEs[d.classification]||d.classification} · recomendación ${d.recommendedUci}.`;
   d.candidates.forEach((c,index)=>{
     const row=document.createElement('div');row.className='candidate'+(c.played?' played':'');const value=d.mode==='theory'?`peso ${c.weight}`:`score ${c.score}`;const loss=c.loss==null?'—':`−${c.loss}`;const heard=c.perception?.[perspectiveKey()],heardChord=candidateChord(c);
@@ -65,7 +65,7 @@ function renderDecision(entry){
     row.querySelector('.listen').onclick=()=>playCandidate(entry,c,index,d.candidates.length);host.appendChild(row);
   });
 }
-function renderTimeline(){const t=$('timeline');t.innerHTML='';game.timeline.forEach((e,i)=>{const b=document.createElement('button');b.textContent=i===0?'•':e.san;b.title=e.fen;if(i===ply)b.classList.add('active');b.onclick=()=>{ply=i;selectedSquare=null;render();};t.appendChild(b);});t.children[ply]?.scrollIntoView({block:'nearest',inline:'nearest'});}
+function renderTimeline(){const t=$('timeline');t.innerHTML='';game.timeline.forEach((e,i)=>{const b=document.createElement('button');b.textContent=i===0?'•':e.san;b.title=e.fen;if(i===ply)b.classList.add('active');b.onclick=()=>{ply=i;selectedSquare=null;clearPrincipalLine();stopAudio();render();};t.appendChild(b);});t.children[ply]?.scrollIntoView({block:'nearest',inline:'nearest'});}
 
 function midiHz(n){return 440*Math.pow(2,(n-69)/12);}
 function midiName(n){return noteNames[((n%12)+12)%12]+(Math.floor(n/12)-1);}
@@ -86,6 +86,7 @@ function ensureAudio(){
   compressor.connect(audio.destination);
   return audio;
 }
+function stopAudio(){if(!audio)return;const current=audio;audio=null;audioMaster=null;void current.close();}
 function pianoNote(midi,when,duration,pan=0,velocity=.7,detune=0){
   const ctx=ensureAudio(),frequency=midiHz(midi),panner=ctx.createStereoPanner(),noteBus=ctx.createGain();
   panner.pan.value=Math.max(-1,Math.min(1,pan));noteBus.gain.value=1;noteBus.connect(panner).connect(audioMaster);
@@ -123,7 +124,7 @@ function playVoices(voices,start,duration,pan=0,arp=false){
 }
 function renderAudioGuide(chord,voices){
   if(!chord||!$('audioGuide'))return;
-  const names=voices.map(v=>midiName(v.midiNote)),mode=$('playMode').value,perspective={global:'Partida completa',white:'Percepción de Blancas',black:'Percepción de Negras'}[perspectiveKey()];
+  const names=voices.map(v=>midiName(v.midiNote)+(v.moved?'*':'')),mode=$('playMode').value,perspective={global:'Partida completa',white:'Percepción de Blancas',black:'Percepción de Negras'}[perspectiveKey()];
   if(mode==='arp'){
     $('audioGuide').innerHTML='<strong>'+escapeHtml(chord.symbol)+'</strong> · '+escapeHtml(perspective)+' · '+voices.length+' voces<br><span class="noteFlow">'+names.map(escapeHtml).join(' → ')+'</span><br><small>Arpegio: suena una vez cada pieza viva, de grave a agudo; al inicio son 32 notas.</small>';
   }else{
@@ -132,8 +133,9 @@ function renderAudioGuide(chord,voices){
 }
 function playPosition(entry,pan=0,delay=0){const beat=60/Number($('tempo').value);playVoices(entryVoices(entry),delay,Math.max(.9,beat*1.8),pan,$('playMode').value==='arp');}
 function playCandidate(entry,c,index,total){const pan=total<=1?0:-.78+1.56*(index/(total-1));const beat=60/Number($('tempo').value);playNotes(entryChord(entry).midiNotes,0,Math.max(.7,beat*1.25),pan,.048,$('playMode').value==='arp');playNotes(candidateChord(c).midiNotes,beat*1.05,Math.max(.85,beat*1.5),pan,.058,$('playMode').value==='arp');}
-$('playPosition').onclick=()=>game&&playPosition(game.timeline[ply]);
-$('compareBtn').onclick=()=>{if(!game)return;const e=game.timeline[ply],d=e.decision;if(!d)return;const picks=[...document.querySelectorAll('.voicePick:checked')].slice(0,10).map(x=>Number(x.dataset.index));picks.forEach((idx,i)=>playCandidate(e,d.candidates[idx],i,picks.length));};
+$('playPosition').onclick=()=>{if(!game)return;stopAudio();playPosition(game.timeline[ply]);};
+$('stopAudio').onclick=stopAudio;
+$('compareBtn').onclick=()=>{if(!game)return;const e=game.timeline[ply],d=e.decision;if(!d)return;stopAudio();const picks=[...document.querySelectorAll('.voicePick:checked')].slice(0,10).map(x=>Number(x.dataset.index));picks.forEach((idx,i)=>playCandidate(e,d.candidates[idx],i,picks.length));};
 $('playMode').onchange=()=>game&&renderAudioGuide(entryChord(game.timeline[ply]),entryVoices(game.timeline[ply]));
 $('tempo').oninput=e=>$('tempoValue').textContent=e.target.value;
 
@@ -155,14 +157,26 @@ async function makeFreeMove(move){
   try{
     const current=game.timeline[ply],res=await fetch('/api/move',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({fen:current.fen,uci:move.uci,ply:ply+1})}),data=await res.json();
     if(!res.ok)throw new Error(data.error||'No se pudo analizar la jugada.');
-    data.entry.freeMove=true;game.timeline=game.timeline.slice(0,ply+1);game.timeline.push(data.entry);game.finalFen=data.entry.fen;ply++;selectedSquare=null;marks=marks.filter(mark=>mark.ply<ply);$('resetBranch').hidden=false;render();
+    data.entry.freeMove=true;game.timeline=game.timeline.slice(0,ply+1);game.timeline.push(data.entry);game.finalFen=data.entry.fen;ply++;selectedSquare=null;marks=marks.filter(mark=>mark.ply<ply);$('resetBranch').hidden=false;clearPrincipalLine();stopAudio();render();
   }catch(err){showError(err.message);}finally{moving=false;$('engineState').textContent='Listo';}
 }
-function go(where){if(!game)return;const max=game.timeline.length-1;ply=where==='start'?0:where==='end'?max:where==='prev'?Math.max(0,ply-1):Math.min(max,ply+1);selectedSquare=null;render();}
+function go(where){if(!game)return;const max=game.timeline.length-1;ply=where==='start'?0:where==='end'?max:where==='prev'?Math.max(0,ply-1):Math.min(max,ply+1);selectedSquare=null;clearPrincipalLine();stopAudio();render();}
 document.querySelectorAll('[data-nav]').forEach(b=>b.onclick=()=>go(b.dataset.nav));
 document.addEventListener('keydown',e=>{if(e.target.matches('textarea,input,select'))return;if(e.key==='ArrowLeft'){e.preventDefault();go('prev');}if(e.key==='ArrowRight'){e.preventDefault();go('next');}});
 $('copyFen').onclick=async()=>{if(game)await navigator.clipboard.writeText(game.timeline[ply].fen);};
 $('resetBranch').onclick=()=>selectGame(Number($('gameSelect').value||0));
+
+function clearPrincipalLine(){if($('principalLine'))$('principalLine').innerHTML='';}
+async function analyzePrincipalLine(){
+  if(!game)return;const host=$('principalLine'),entry=game.timeline[ply],maxPlies=Math.max(1,Math.min(24,Number($('lineDepth').value)||8));host.textContent='Afinando una sola línea…';$('engineState').textContent='Afinando…';
+  try{
+    const res=await fetch('/api/principal-line',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({fen:entry.fen,maxPlies})}),data=await res.json();
+    if(!res.ok)throw new Error(data.error||'No se pudo calcular la línea.');
+    host.innerHTML='';data.line.moves.forEach(move=>{const row=document.createElement('button');row.className='lineMove';row.innerHTML=`<strong>${move.ply}. ${escapeHtml(move.san)}</strong><code>${escapeHtml(move.uci)}</code><span>${escapeHtml(move.chord.symbol)}</span><span>D ${move.dissonance}</span>${move.inTheory?'<span class="badge">TEORÍA</span>':''}${move.selectiveExtension?'<span class="extension">EXTENSIÓN</span>':''}`;row.onclick=()=>playNotes(move.chord.midiNotes,0,1.2,0,.06,$('playMode').value==='arp');host.appendChild(row);});
+    const summary=document.createElement('small');summary.textContent=`${data.line.moves.length} plies · ${data.line.selectiveExtensions} extensiones selectivas · ${data.line.stopReason}`;host.appendChild(summary);
+  }catch(err){host.textContent='';showError(err.message);}finally{$('engineState').textContent='Listo';}
+}
+$('principalLineBtn').onclick=()=>void analyzePrincipalLine();
 
 $('markDissonance').onclick=()=>{
   if(!game||ply===0)return;const entry=game.timeline[ply];const observation={game:{title:game.title,event:game.event,white:game.white,black:game.black,result:game.result},ply,timestamp:new Date().toISOString(),san:entry.san,uci:entry.uci,fen:entry.fen,chord:entry.chord.symbol,midiNotes:entry.chord.midiNotes,voicing:entry.voicing,harmonicVector:{white:entry.harmony.white,black:entry.harmony.black,balance:entry.harmony.relativeScore},perception:entry.perception,perceptionDelta:entry.perceptionDelta,dissonance:entry.perception.global.tension,tacticalEnergy:entry.harmony.tension,opening:{eco:entry.eco,name:entry.opening,inTheory:entry.inTheory},decision:entry.decision};marks=marks.filter(x=>x.ply!==ply);marks.push(observation);$('markDissonance').textContent='✓ Disonancia marcada';setTimeout(()=>$('markDissonance').textContent='Marcar disonancia',1000);

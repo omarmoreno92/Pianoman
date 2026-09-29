@@ -12,20 +12,20 @@ Piano Man is a .NET 10 research project that represents chess positions as harmo
 
 Before each played move:
 
-- if the position and move exist in the theory corpus, Piano Man shows **`TEORÍA · SIN BÚSQUEDA`**, restricts candidates to known theory, recommends the most harmonious continuation and uses corpus weight only as a deterministic tie-breaker;
+- if the position and move exist in the theory corpus, Piano Man shows **`TEORÍA · SIN BÚSQUEDA`**, restricts candidates to known theory and combines harmonic structure with a bounded logarithmic support prior derived from the corpus;
 - otherwise it shows **`Afinando…`**, evaluates every legal move at one static ply from the moving player's perspective, retains the top ten plus the played move, and reports its rank/loss.
 
 The provisional Piano Man loss bands are: `0 Best`, `1–15 Excellent`, `16–40 Good`, `41–80 Inaccuracy`, `81–160 Mistake`, and `>160 Blunder`. The web UI translates them to Spanish and keeps the model attribution visible.
 
-Theory membership defines the admissible opening continuations. Piano Man then chooses among those theoretical continuations by its harmonic score; corpus weight is a deterministic tie-breaker. A theoretical continuation has zero global dissonance. Sharpness remains audible as **tactical energy**, while a side that is worse can hear mild perspective-specific discomfort.
+Theory membership defines the admissible opening continuations. Piano Man then chooses among those theoretical continuations by harmonic score plus corpus support. The audible theoretical gap is measured against the best continuation at that exact position; no opening name or first move has a manually assigned tension. Sharpness remains audible as **tactical energy**, while a side that is worse can hear mild perspective-specific discomfort.
 
 The auditory model keeps three independent signals:
 
-- **dissonance**: the measured loss of the played move outside theory;
+- **dissonance**: the measured gap to the best admissible continuation—book-derived in theory and position-derived outside it;
 - **energy**: attacks, captures, checks and board contact, without implying an error;
 - **perspective discomfort**: the disadvantage experienced by White or Black.
 
-Every live piece contributes one deterministic piano voice. The initial board therefore plays 32 voices, all quantized to the initial C harmony. Chord mode plays those voices together; arpeggio mode plays every piece one at a time.
+Every live piece contributes one deterministic piano voice. The initial board therefore plays 32 voices, all quantized to the initial C harmony. Piece type and square establish its register and pitch; when a move has measured dissonance, the moved piece is altered first and contaminates the aggregate chord in proportion to the loss. Chord mode plays those voices together; arpeggio mode plays every piece one at a time and can be stopped immediately.
 
 Every position now exposes three simultaneous listening perspectives: **Global**, **White**, and **Black**. The same board can therefore remain globally coherent while becoming increasingly uncomfortable for one side.
 
@@ -43,6 +43,7 @@ Open the URL printed by ASP.NET Core. The UI supports:
 - board from FEN with last-move highlighting;
 - first/previous/next/last controls and keyboard arrows;
 - legal click-to-move branching from any loaded PGN position, with a one-click return to the original PGN;
+- on-demand single principal harmonic line, with reply extensions only for abrupt material/tactical anomalies;
 - complete move timeline;
 - ECO/name and theory state;
 - chord, MIDI notes, tension, balance and all eight harmonic components;
@@ -54,6 +55,7 @@ API endpoints:
 
 - `POST /api/analyze`
 - `POST /api/move`
+- `POST /api/principal-line`
 - `GET /api/demo`
 - `GET /api/health`
 

@@ -28,7 +28,7 @@ The timeline also stores deltas between consecutive perceptions. Audio can there
 
 ### Theory
 
-If the played move exists among the book continuations, the decision remains `TEORÍA · SIN BÚSQUEDA`. The theory book restricts the legal candidate set. Piano Man projects only those known continuations one ply through the harmonic model and recommends the most harmonious one; corpus weight breaks deterministic ties. No arbitrary legal child outside theory is considered.
+If the played move exists among the book continuations, the decision remains `TEORÍA · SIN BÚSQUEDA`. The theory book restricts the legal candidate set. Piano Man projects only those known continuations one ply, combines harmonic score with a bounded logarithmic corpus-support prior, and recommends the strongest result. No arbitrary legal child outside theory is considered.
 
 ### Outside theory — Piano Man
 
