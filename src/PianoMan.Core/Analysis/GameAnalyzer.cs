@@ -8,6 +8,7 @@ public static class GameAnalyzer
 {
     private const int RadioKillerActivationLoss=81;
     private const int CorrectMoveWindow=15;
+    private static readonly Lazy<TheoryBook?> EmbeddedBook=new(LoadEmbeddedBook);
 
     public static GameAnalysis Analyze(PgnGame game,TheoryBook? book=null)
     {
@@ -66,7 +67,23 @@ public static class GameAnalyzer
     public static (HarmonySnapshot Harmony,MusicalChord Chord) Analyze(Position p)
     {
         var h=HarmonyAnalyzer.Analyze(p);
-        return(h,ChordMapper.MapGlobal(h));
+        return(h,PerceptionAnalyzer.Analyze(h,new SonificationContext(false,0)).Global.Chord);
+    }
+
+    public static MoveAnalysis AnalyzeContinuation(Position position,Move played,int ply,TheoryBook? book=null)
+    {
+        ArgumentNullException.ThrowIfNull(position);
+        book??=TryLoadBook();
+        var before=PerceptionAnalyzer.Analyze(HarmonyAnalyzer.Analyze(position),new SonificationContext(book?.Lookup(position) is not null,0));
+        var side=position.SideToMove;
+        var moveNumber=position.FullmoveNumber;
+        var san=SanFormatter.Format(position,played);
+        var decision=AnalyzeMove(position,played,book);
+        var from=Square.Name(played.From);
+        var to=Square.Name(played.To);
+        var next=position.Clone();
+        next.Apply(played);
+        return CreatePositionAnalysis(next,ply,moveNumber,side.ToString(),san,played.ToUci(),decision,book,(from,to),before);
     }
 
     public static MoveDecision AnalyzeMove(Position position,Move played,TheoryBook? book=null,PianoManPersona? requestedPersona=null)
@@ -95,6 +112,7 @@ public static class GameAnalyzer
                     i+1,
                     SanFormatter.Format(position,item.Move),
                     item.Move.ToUci(),
+                    item.Fen,
                     null,
                     item.Weight,
                     null,
@@ -134,11 +152,25 @@ public static class GameAnalyzer
             var perception=PerceptionAnalyzer.Analyze(harmony);
             var own=PerceptionAnalyzer.ForSide(perception,side);
             var harmonyScore=score-(own.Tension/4);
-            all.Add(new CandidateState(move,score,harmonyScore,harmony,perception,own.Chord,own.Tension,null));
+            all.Add(new CandidateState(move,score,harmonyScore,harmony,perception,own.Chord,own.Tension,null,next.ToFen()));
         }
 
         var sorted=all.OrderByDescending(x=>x.Score).ThenBy(x=>x.Move.ToUci(),StringComparer.Ordinal).ToArray();
         var best=sorted.Length==0?0:sorted[0].Score;
+        all=all.Select(item=>
+        {
+            var candidateLoss=Math.Max(0,best-item.Score);
+            var candidatePerception=PerceptionAnalyzer.Analyze(item.Harmony,new SonificationContext(false,candidateLoss));
+            var own=PerceptionAnalyzer.ForSide(candidatePerception,side);
+            return item with
+            {
+                HarmonyScore=item.Score-(own.Tension/4),
+                Perception=candidatePerception,
+                Chord=own.Chord,
+                Tension=own.Tension
+            };
+        }).ToList();
+        sorted=all.OrderByDescending(x=>x.Score).ThenBy(x=>x.Move.ToUci(),StringComparer.Ordinal).ToArray();
         var playedIndex=Array.FindIndex(sorted,x=>x.Move==played);
         if(playedIndex<0)throw new InvalidOperationException("Played move was not legal.");
 
@@ -167,6 +199,7 @@ public static class GameAnalyzer
                 originalRank,
                 SanFormatter.Format(position,item.Move),
                 item.Move.ToUci(),
+                item.Fen,
                 item.Score,
                 null,
                 Math.Max(0,best-item.Score),
@@ -220,32 +253,41 @@ public static class GameAnalyzer
         var next=position.Clone();
         next.Apply(move);
         var harmony=HarmonyAnalyzer.Analyze(next);
-        var perception=PerceptionAnalyzer.Analyze(harmony);
+        var perception=PerceptionAnalyzer.Analyze(harmony,new SonificationContext(true,0));
         var own=PerceptionAnalyzer.ForSide(perception,side);
         var score=side==Color.White?harmony.RelativeScore:-harmony.RelativeScore;
-        return new CandidateState(move,score,score-(own.Tension/4),harmony,perception,own.Chord,own.Tension,continuation.Weight);
+        return new CandidateState(move,score,score-(own.Tension/4),harmony,perception,own.Chord,own.Tension,continuation.Weight,next.ToFen());
     }
 
     private static void AddPosition(List<MoveAnalysis> timeline,Position p,int ply,int moveNumber,string side,string san,string uci,MoveDecision? decision,TheoryBook? book,(string From,string To)? last)
     {
+        var before=timeline.Count>0?timeline[^1].Perception:null;
+        timeline.Add(CreatePositionAnalysis(p,ply,moveNumber,side,san,uci,decision,book,last,before));
+    }
+
+    private static MoveAnalysis CreatePositionAnalysis(Position p,int ply,int moveNumber,string side,string san,string uci,MoveDecision? decision,TheoryBook? book,(string From,string To)? last,PositionPerception? before)
+    {
         var h=HarmonyAnalyzer.Analyze(p);
-        var perception=PerceptionAnalyzer.Analyze(h);
         var lookup=book?.Lookup(p);
-        PerceptionDelta? delta=null;
+        var theoreticalSound=decision?.Mode==AnalysisMode.Theory||(decision is null&&lookup is not null);
+        var perception=PerceptionAnalyzer.Analyze(h,new SonificationContext(theoreticalSound,decision?.Loss));
+        PerceptionDelta? delta=before is null?null:new PerceptionDelta(
+            perception.Global.Score-before.Global.Score,
+            perception.White.Score-before.White.Score,
+            perception.Black.Score-before.Black.Score,
+            perception.Global.Tension-before.Global.Tension,
+            perception.White.Tension-before.White.Tension,
+            perception.Black.Tension-before.Black.Tension);
+        var legalMoves=MoveGenerator.GenerateLegalMoves(p)
+            .Select(move=>new LegalMoveOption(
+                Square.Name(move.From),
+                Square.Name(move.To),
+                move.ToUci(),
+                SanFormatter.Format(p,move),
+                move.Promotion==PieceType.None?null:move.Promotion.ToString()))
+            .ToArray();
 
-        if(timeline.Count>0)
-        {
-            var before=timeline[^1].Perception;
-            delta=new PerceptionDelta(
-                perception.Global.Score-before.Global.Score,
-                perception.White.Score-before.White.Score,
-                perception.Black.Score-before.Black.Score,
-                perception.Global.Tension-before.Global.Tension,
-                perception.White.Tension-before.White.Tension,
-                perception.Black.Tension-before.Black.Tension);
-        }
-
-        timeline.Add(new MoveAnalysis(
+        return new MoveAnalysis(
             ply,
             moveNumber,
             side,
@@ -261,10 +303,14 @@ public static class GameAnalyzer
             lookup?.Eco,
             lookup?.Name,
             lookup is not null,
-            decision));
+            decision,
+            PieceSonifier.Map(p,perception),
+            legalMoves);
     }
 
-    private static TheoryBook? TryLoadBook()
+    private static TheoryBook? TryLoadBook()=>EmbeddedBook.Value;
+
+    private static TheoryBook? LoadEmbeddedBook()
     {
         try{return TheoryBook.LoadEmbedded();}
         catch{return null;}
@@ -278,5 +324,6 @@ public static class GameAnalyzer
         PositionPerception Perception,
         MusicalChord Chord,
         int Tension,
-        uint? Weight);
+        uint? Weight,
+        string Fen);
 }

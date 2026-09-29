@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Separated move dissonance from tactical energy so theory remains consonant even when sharp.
+- Added deterministic one-voice-per-piece sonification (32 voices in the initial position).
+- Added legal click-to-move analysis branches from every PGN timeline position and `POST /api/move`.
 - Added Global/White/Black auditory perception and per-move perception deltas.
 - Theory recommendations now choose the most harmonious known continuation with corpus weight as deterministic tie-breaker.
 - Added guarded Piano Man/Radio Killer decision policies outside theory.

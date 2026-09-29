@@ -1,6 +1,6 @@
 # Validation
 
-The release gate for Piano Man 0.2 is deterministic and offline after restore.
+The release gate for Piano Man 0.3 is deterministic and offline after restore.
 
 ```bash
 dotnet restore PianoMan.sln
@@ -19,9 +19,12 @@ curl -f http://localhost:5000/api/demo
 curl -f -H 'content-type: application/json' \
   -d '{"pgn":"1. e4 e5 2. Nf3 Nc6 *"}' \
   http://localhost:5000/api/analyze
+curl -f -H 'content-type: application/json' \
+  -d '{"fen":"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1","uci":"e7e5","ply":2}' \
+  http://localhost:5000/api/move
 ```
 
-The full Immortal Game in `samples/immortal-game.pgn` must parse through mate. CLI JSON must serialize the new analysis decision/candidate types. CI additionally publishes and executes a Linux Native AOT CLI.
+The full Immortal Game in `samples/immortal-game.pgn` must parse through mate. The initial timeline entry must expose 32 piece voices and every first-ply book continuation must have zero global dissonance. CLI JSON must serialize the new analysis decision/candidate types. CI additionally publishes and executes a Linux Native AOT CLI.
 
 ## Scientific interpretation
 

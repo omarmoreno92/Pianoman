@@ -11,15 +11,29 @@ Piano Man represents each position with an explainable deterministic vector for 
 7. pressure;
 8. initiative.
 
-`HarmonyAnalyzer` owns this chess-derived vector and tactical tension. `ChordMapper` consumes derived values and maps them to chord/MIDI notes. These components remain independent so changing musical vocabulary cannot silently change chess evaluation.
+`HarmonyAnalyzer` owns this chess-derived vector and tactical energy. `ChordMapper` consumes derived values and maps them to chord/MIDI notes. These components remain independent so changing musical vocabulary cannot silently change chess evaluation.
+
+## Dissonance is not sharpness
+
+The renderer deliberately separates three quantities:
+
+1. **Move dissonance** comes from the played move's loss outside theory. Theory has zero global move dissonance.
+2. **Tactical energy** comes from checks, captures, attacks and contact. A sound theoretical position may be energetic without sounding wrong.
+3. **Perspective discomfort** adds a restrained color for the side whose score, king safety or pressure is worse.
+
+This prevents a sound sacrifice or a sharp book line from being mislabeled as a mistake merely because many pieces attack each other.
+
+## One voice per piece
+
+`PieceSonifier` emits one deterministic voice for every live piece. It uses the selected chord's pitch classes, piece type, color and square to choose register and pitch. The initial position therefore contains 32 voices whose pitch classes all belong to C major. Perspective discomfort is expressed with small deterministic detuning instead of changing the objective board chord.
 
 ## Perception
 
 `PerceptionAnalyzer` turns one board snapshot into three listeners:
 
-- **Global** uses board tension plus imbalance and intentionally ignores which color benefits from the imbalance.
-- **White** uses White-relative score and additional tension from pressure, king fragility and disadvantage.
-- **Black** mirrors the score and computes Black's own exposure independently.
+- **Global** uses move dissonance and intentionally ignores which color benefits from the imbalance.
+- **White** uses White-relative score and restrained discomfort from pressure, king fragility and disadvantage.
+- **Black** mirrors the score and computes Black's own exposure independently. At the initial position Black hears a very small discomfort because White owns the first-move initiative.
 
 A good move for one side can therefore improve that side's sound while making the opponent's sound more tense even if the global position remains coherent. `PerceptionDelta` stores the before/after change so the musical transition can be taught, not merely the destination chord.
 

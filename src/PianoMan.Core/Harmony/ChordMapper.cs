@@ -6,15 +6,16 @@ public sealed class ChordMapper
 {
     private static readonly string[] CircleOfFifths=["Ab","Eb","Bb","F","C","G","D","A","E"];
 
-    public static MusicalChord Map(HarmonySnapshot harmony)=>MapGlobal(harmony);
+    public static MusicalChord Map(HarmonySnapshot harmony)=>MapGlobal(harmony,harmony.Tension);
 
-    public static MusicalChord MapGlobal(HarmonySnapshot harmony)
+    public static MusicalChord MapGlobal(HarmonySnapshot harmony)=>MapGlobal(harmony,harmony.Tension);
+
+    public static MusicalChord MapGlobal(HarmonySnapshot harmony,int audibleTension)
     {
         ArgumentNullException.ThrowIfNull(harmony);
-        var balanceTension=Math.Clamp(harmony.Tension+(Math.Abs(harmony.RelativeScore)/3),0,255);
         return MapVector(
             harmony.RelativeScore,
-            balanceTension,
+            audibleTension,
             harmony.White.Activity-harmony.Black.Activity,
             harmony.White.Coordination-harmony.Black.Coordination,
             harmony.White.KingSafety-harmony.Black.KingSafety,
@@ -60,12 +61,12 @@ public sealed class ChordMapper
 
         var tones=new List<FeatureTone>();
         AddTone(tones,spaceGap,4,spaceGap>=0?14:9,spaceGap>=0?"add9":"6");
-        AddTone(tones,activityGap,4,activityGap>=0?21:17,activityGap>=0?"13":"11");
-        AddTone(tones,coordinationGap,4,coordinationGap>=0?11:10,coordinationGap>=0?"maj7":"b7");
-        AddTone(tones,structureGap,8,structureGap>=0?9:8,structureGap>=0?"6":"b6");
-        AddTone(tones,pressureGap,8,pressureGap>=0?10:13,pressureGap>=0?"b7":"b9");
+        AddTone(tones,activityGap,4,activityGap>=0?21:(tension<16?14:17),activityGap>=0?"13":(tension<16?"add9":"11"));
+        AddTone(tones,coordinationGap,4,coordinationGap>=0?11:(tension<16?14:10),coordinationGap>=0?"maj7":(tension<16?"add9":"b7"));
+        AddTone(tones,structureGap,8,structureGap>=0?9:(tension<16?14:8),structureGap>=0?"6":(tension<16?"add9":"b6"));
+        AddTone(tones,pressureGap,8,pressureGap>=0?(tension<16?14:10):(tension<16?9:13),pressureGap>=0?(tension<16?"add9":"b7"):(tension<16?"6":"b9"));
         if(Math.Abs(kingSafetyGap)>=12)
-            tones.Add(new FeatureTone(Math.Abs(kingSafetyGap)/12d,18,"#11"));
+            tones.Add(new FeatureTone(Math.Abs(kingSafetyGap)/12d,tension<16?14:18,tension<16?"add9":"#11"));
 
         foreach(var tone in tones.OrderByDescending(x=>x.Strength).ThenBy(x=>x.Label,StringComparer.Ordinal))
         {
