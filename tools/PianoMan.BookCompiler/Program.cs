@@ -16,6 +16,7 @@ const int ExpectedOpenings = 3_329;
 const int ExpectedMaxPlies = 36;
 const int ExpectedRawBytes = 7_586_743;
 const int ExpectedCompressedBytes = 2_910_309;
+const int ExpectedStockfishGames = 198_350;
 
 var options = ParseArgs(args);
 var zipPath = Required(options, "stockfish-zip");
@@ -35,15 +36,25 @@ var pgnSha = Convert.ToHexStringLower(SHA256.HashData(pgnBytes));
 if (!pgnSha.Equals(ExpectedPgnSha, StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException($"Stockfish PGN SHA-256 mismatch: {pgnSha}.");
 
 var builder = new Builder();
-using (var reader = new StringReader(Encoding.UTF8.GetString(pgnBytes)))
+IReadOnlyList<PgnGame> stockfishGames;
+try
 {
-    var lineNumber = 0;
-    while (reader.ReadLine() is { } line)
+    stockfishGames = PgnReader.ReadMany(Encoding.UTF8.GetString(pgnBytes));
+}
+catch (Exception ex)
+{
+    throw new InvalidDataException("The pinned Stockfish PGN could not be parsed as a multi-game PGN corpus.", ex);
+}
+
+if (stockfishGames.Count != ExpectedStockfishGames)
+    throw new InvalidDataException($"Stockfish PGN expected {ExpectedStockfishGames} games, got {stockfishGames.Count}.");
+
+for (var gameIndex = 0; gameIndex < stockfishGames.Count; gameIndex++)
+{
+    try { builder.AddLine(stockfishGames[gameIndex].Moves, null, null); }
+    catch (Exception ex)
     {
-        lineNumber++;
-        if (string.IsNullOrWhiteSpace(line)) continue;
-        try { builder.AddLine(PgnReader.Read(line).Moves, null, null); }
-        catch (Exception ex) { throw new InvalidDataException($"Illegal/invalid Stockfish source line {lineNumber}: {line}", ex); }
+        throw new InvalidDataException($"Illegal/invalid Stockfish source game {gameIndex + 1}.", ex);
     }
 }
 

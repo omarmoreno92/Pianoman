@@ -48,6 +48,10 @@ try {
         --lichess-dir $lichessDirectory `
         --output $OutputDirectory
 
+    if ($LASTEXITCODE -ne 0) {
+        throw "PianoMan.BookCompiler failed with exit code $LASTEXITCODE. The existing embedded book was left unchanged."
+    }
+
     $bookPath = Join-Path $OutputDirectory 'theory-book-v1.bin.br'
     $actualBookSha = (Get-FileHash -Algorithm SHA256 $bookPath).Hash.ToLowerInvariant()
     if ($actualBookSha -ne $expectedBookSha256) {
